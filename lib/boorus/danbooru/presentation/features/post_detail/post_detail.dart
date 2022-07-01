@@ -11,7 +11,6 @@ import 'package:flutter/services.dart';
 import 'package:cached_network_image/cached_network_image.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:flutter_cache_manager/flutter_cache_manager.dart';
-import 'package:flutter_hooks/flutter_hooks.dart';
 import 'package:modal_bottom_sheet/modal_bottom_sheet.dart';
 import 'package:path/path.dart' as p;
 import 'package:webview_flutter/webview_flutter.dart';
@@ -27,7 +26,6 @@ import 'package:boorusama/boorus/danbooru/presentation/features/post_detail/pare
 import 'package:boorusama/boorus/danbooru/presentation/shared/posts/posts.dart';
 import 'package:boorusama/boorus/danbooru/router.dart';
 import 'package:boorusama/core/core.dart';
-import 'package:boorusama/core/presentation/hooks/hooks.dart';
 import 'package:boorusama/main.dart';
 import 'widgets/information_section.dart';
 import 'widgets/pool_tiles.dart';
@@ -52,7 +50,7 @@ class Recommended {
   List<Post> get posts => _posts;
 }
 
-class PostDetail extends HookWidget {
+class PostDetail extends StatefulWidget {
   const PostDetail({
     Key? key,
     required this.post,
@@ -65,26 +63,35 @@ class PostDetail extends HookWidget {
   final AnimationController animController;
 
   @override
+  State<PostDetail> createState() => _PostDetailState();
+}
+
+class _PostDetailState extends State<PostDetail> {
+  final scrollController = ScrollController();
+  final imagePath = ValueNotifier<String?>(null);
+
+  @override
+  void initState() {
+    super.initState();
+    // Enable virtual display.
+    if (Platform.isAndroid) WebView.platform = SurfaceAndroidWebView();
+  }
+
+  @override
+  void dispose() {
+    scrollController.dispose();
+    super.dispose();
+  }
+
+  @override
   Widget build(BuildContext context) {
-    final scrollController = useScrollController();
-    final scrollControllerWithAnim =
-        useScrollControllerForAnimation(animController, scrollController);
-    final isMounted = useIsMounted();
-    final imagePath = useState<String?>(null);
-
-    useEffect(() {
-      // Enable virtual display.
-      if (Platform.isAndroid) WebView.platform = SurfaceAndroidWebView();
-      return null;
-    }, []);
-
     Widget postWidget;
-    if (post.isVideo) {
-      if (p.extension(post.normalImageUrl) == '.webm') {
+    if (widget.post.isVideo) {
+      if (p.extension(widget.post.normalImageUrl) == '.webm') {
         final String videoHtml = '''
             <center>
               <video controls allowfulscreen width="100%" height="100%" controlsList="nodownload" style="background-color:black;vertical-align: middle;display: inline-block;" autoplay muted loop>
-                <source src=${post.normalImageUrl}#t=0.01 type="video/webm" />
+                <source src=${widget.post.normalImageUrl}#t=0.01 type="video/webm" />
               </video>
             </center>''';
         postWidget = Container(
@@ -103,21 +110,21 @@ class PostDetail extends HookWidget {
           ),
         );
       } else {
-        postWidget = PostVideo(post: post);
+        postWidget = PostVideo(post: widget.post);
       }
     } else {
       postWidget = GestureDetector(
         onTap: () {
           AppRouter.router.navigateTo(context, '/posts/image',
-              routeSettings: RouteSettings(arguments: [post]));
+              routeSettings: RouteSettings(arguments: [widget.post]));
         },
         child: CachedNetworkImage(
-          imageUrl: post.normalImageUrl,
+          imageUrl: widget.post.normalImageUrl,
           imageBuilder: (context, imageProvider) {
             DefaultCacheManager()
-                .getFileFromCache(post.normalImageUrl)
+                .getFileFromCache(widget.post.normalImageUrl)
                 .then((file) {
-              if (!isMounted()) return;
+              if (!mounted) return;
               imagePath.value = file!.file.path;
             });
             return Image(image: imageProvider);
@@ -127,8 +134,8 @@ class PostDetail extends HookWidget {
           progressIndicatorBuilder: (context, url, progress) => FittedBox(
             fit: BoxFit.cover,
             child: SizedBox(
-              height: post.height,
-              width: post.width,
+              height: widget.post.height,
+              width: widget.post.width,
               child: Stack(
                 children: [
                   Align(
@@ -152,13 +159,13 @@ class PostDetail extends HookWidget {
         builder: (context, state) {
           return Scaffold(
             backgroundColor: Colors.transparent,
-            body: minimal
+            body: widget.minimal
                 ? Center(child: postWidget)
                 : Stack(
                     alignment: Alignment.bottomCenter,
                     children: [
                       CustomScrollView(
-                        controller: scrollControllerWithAnim,
+                        controller: scrollController,
                         slivers: [
                           SliverToBoxAdapter(
                             child: postWidget,
@@ -216,19 +223,19 @@ class PostDetail extends HookWidget {
         crossAxisAlignment: CrossAxisAlignment.start,
         mainAxisSize: MainAxisSize.min,
         children: [
-          InformationSection(post: post),
+          InformationSection(post: widget.post),
           if (state.settings.actionBarDisplayBehavior ==
               ActionBarDisplayBehavior.scrolling)
             Padding(
               padding: const EdgeInsets.only(bottom: 10),
               child: _buildActionBar(imagePath),
             ),
-          if (post.hasChildren || post.hasParent) ...[
+          if (widget.post.hasChildren || widget.post.hasParent) ...[
             const _Divider(),
             _buildParentChildTile(context),
             const _Divider(),
           ],
-          if (!post.hasChildren && !post.hasParent)
+          if (!widget.post.hasChildren && !widget.post.hasParent)
             const Divider(height: 8, thickness: 1),
           _buildRecommendedArtistList(),
           _buildRecommendedCharacterList(),
@@ -241,7 +248,7 @@ class PostDetail extends HookWidget {
     return ListTile(
       dense: true,
       tileColor: Theme.of(context).cardColor,
-      title: Text(_getPostParentChildTextDescription(post)),
+      title: Text(_getPostParentChildTextDescription(widget.post)),
       trailing: Padding(
         padding: const EdgeInsets.all(4),
         child: ElevatedButton(
@@ -255,13 +262,15 @@ class PostDetail extends HookWidget {
                     blacklistedTagsRepository:
                         context.read<BlacklistedTagsRepository>(),
                   )..add(PostRefreshed(
-                      tag: post.hasParent
-                          ? 'parent:${post.parentId}'
-                          : 'parent:${post.id}')),
+                      tag: widget.post.hasParent
+                          ? 'parent:${widget.post.parentId}'
+                          : 'parent:${widget.post.id}')),
                 )
               ],
               child: ParentChildPostPage(
-                  parentPostId: post.hasParent ? post.parentId! : post.id),
+                  parentPostId: widget.post.hasParent
+                      ? widget.post.parentId!
+                      : widget.post.id),
             ),
           ),
           child: const Text(
@@ -274,7 +283,7 @@ class PostDetail extends HookWidget {
   }
 
   Widget _buildRecommendedArtistList() {
-    if (post.artistTags.isEmpty) return const SizedBox.shrink();
+    if (widget.post.artistTags.isEmpty) return const SizedBox.shrink();
     return BlocBuilder<RecommendedArtistPostCubit,
         AsyncLoadState<List<Recommended>>>(
       builder: (context, state) {
@@ -286,7 +295,7 @@ class PostDetail extends HookWidget {
                 .toList(),
           );
         } else {
-          final artists = post.artistTags;
+          final artists = widget.post.artistTags;
           return Column(
             children: [
               ...List.generate(
@@ -320,7 +329,7 @@ class PostDetail extends HookWidget {
               routeSettings: RouteSettings(
                 arguments: [
                   item._title,
-                  post.normalImageUrl,
+                  widget.post.normalImageUrl,
                 ],
               ),
             ),
@@ -334,7 +343,7 @@ class PostDetail extends HookWidget {
   }
 
   Widget _buildRecommendedCharacterList() {
-    if (post.characterTags.isEmpty) return const SizedBox.shrink();
+    if (widget.post.characterTags.isEmpty) return const SizedBox.shrink();
     return BlocBuilder<RecommendedCharacterPostCubit,
         AsyncLoadState<List<Recommended>>>(
       builder: (context, state) {
@@ -346,7 +355,7 @@ class PostDetail extends HookWidget {
                 .toList(),
           );
         } else {
-          final characters = post.characterTags;
+          final characters = widget.post.characterTags;
           return Column(
             children: [
               ...List.generate(
@@ -369,7 +378,7 @@ class PostDetail extends HookWidget {
     return ValueListenableBuilder<String?>(
       valueListenable: imagePath,
       builder: (context, value, child) => PostActionToolbar(
-        post: post,
+        post: widget.post,
         imagePath: value,
       ),
     );
@@ -390,7 +399,7 @@ class _Divider extends StatelessWidget {
   }
 }
 
-class RecommendPostSection extends HookWidget {
+class RecommendPostSection extends StatelessWidget {
   const RecommendPostSection({
     Key? key,
     required this.posts,
@@ -423,7 +432,7 @@ class RecommendPostSection extends HookWidget {
   }
 }
 
-class RecommendPostSectionPlaceHolder extends HookWidget {
+class RecommendPostSectionPlaceHolder extends StatelessWidget {
   const RecommendPostSectionPlaceHolder({
     Key? key,
     required this.header,
