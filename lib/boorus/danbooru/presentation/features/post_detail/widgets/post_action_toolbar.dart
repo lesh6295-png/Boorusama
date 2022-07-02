@@ -22,10 +22,12 @@ class PostActionToolbar extends StatefulWidget {
     Key? key,
     required this.post,
     required this.imagePath,
+    this.axis = Axis.horizontal,
   }) : super(key: key);
 
   final Post post;
   final String? imagePath;
+  final Axis axis;
 
   @override
   State<PostActionToolbar> createState() => _PostActionToolbarState();
@@ -35,16 +37,26 @@ class _PostActionToolbarState extends State<PostActionToolbar> {
   @override
   Widget build(BuildContext context) {
     return BlocBuilder<AuthenticationCubit, AuthenticationState>(
-      builder: (context, authState) => ButtonBar(
-        buttonPadding: EdgeInsets.zero,
-        alignment: MainAxisAlignment.spaceEvenly,
-        children: [
-          _buildFavoriteButton(authState),
-          _buildCommentButton(),
-          _buildDownloadButton(),
-          _buildShareButton(),
-        ],
-      ),
+      builder: (context, authState) => widget.axis == Axis.horizontal
+          ? ButtonBar(
+              buttonPadding: EdgeInsets.zero,
+              alignment: MainAxisAlignment.spaceEvenly,
+              children: [
+                _buildFavoriteButton(authState),
+                _buildCommentButton(),
+                _buildDownloadButton(),
+                _buildShareButton(),
+              ],
+            )
+          : Column(
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                _buildFavoriteButton(authState),
+                _buildCommentButton(),
+                _buildDownloadButton(),
+                _buildShareButton(),
+              ],
+            ),
     );
   }
 

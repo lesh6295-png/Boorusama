@@ -14,14 +14,26 @@ import 'package:modal_bottom_sheet/modal_bottom_sheet.dart';
 import 'package:scroll_to_index/scroll_to_index.dart';
 
 // Project imports:
+import 'package:boorusama/boorus/danbooru/application/api/api.dart';
+import 'package:boorusama/boorus/danbooru/application/authentication/authentication.dart';
+import 'package:boorusama/boorus/danbooru/application/favorites/favorites.dart';
+import 'package:boorusama/boorus/danbooru/application/pool/pool.dart';
+import 'package:boorusama/boorus/danbooru/application/recommended/recommended.dart';
 import 'package:boorusama/boorus/danbooru/application/settings/settings.dart';
 import 'package:boorusama/boorus/danbooru/application/tag/tag.dart';
 import 'package:boorusama/boorus/danbooru/application/theme/theme.dart';
+import 'package:boorusama/boorus/danbooru/domain/accounts/accounts.dart';
+import 'package:boorusama/boorus/danbooru/domain/favorites/favorites.dart';
+import 'package:boorusama/boorus/danbooru/domain/pools/pools.dart';
 import 'package:boorusama/boorus/danbooru/domain/posts/posts.dart';
+import 'package:boorusama/boorus/danbooru/domain/settings/settings.dart';
 import 'package:boorusama/boorus/danbooru/domain/tags/tags.dart';
+import 'package:boorusama/boorus/danbooru/infrastructure/repositories/repositories.dart';
+import 'package:boorusama/boorus/danbooru/presentation/features/post_detail/post_detail_page_experimental.dart';
 import 'package:boorusama/boorus/danbooru/presentation/shared/shared.dart';
 import 'package:boorusama/boorus/danbooru/router.dart';
 import 'package:boorusama/core/core.dart';
+import 'package:boorusama/core/infrastructure/caching/fifo_cacher.dart';
 import 'package:boorusama/core/presentation/download_provider_widget.dart';
 import 'package:boorusama/core/presentation/widgets/shadow_gradient_overlay.dart';
 
@@ -64,7 +76,7 @@ class SliverPostGridDelegate extends SliverGridDelegateWithFixedCrossAxisCount {
 }
 
 class SliverPostGrid extends HookWidget {
-  const SliverPostGrid({
+  SliverPostGrid({
     Key? key,
     required this.posts,
     required this.scrollController,
@@ -85,6 +97,8 @@ class SliverPostGrid extends HookWidget {
   final BorderRadiusGeometry? borderRadius;
   final Widget Function(BuildContext context, Post post, int index)?
       postAnnotationBuilder;
+
+  final currentPage = ValueNotifier<int?>(null);
 
   @override
   Widget build(BuildContext context) {
@@ -110,7 +124,8 @@ class SliverPostGrid extends HookWidget {
               current.settings.imageBorderRadius ||
           previous.settings.imageGridSpacing !=
               current.settings.imageGridSpacing ||
-          previous.settings.imageQuality != current.settings.imageQuality,
+          previous.settings.imageQuality != current.settings.imageQuality ||
+          previous.settings.detailsStyle != current.settings.detailsStyle,
       builder: (context, state) {
         return SliverGrid(
           gridDelegate: gridSizeToGridDelegate(
@@ -124,16 +139,29 @@ class SliverPostGrid extends HookWidget {
                 mainAxisSize: MainAxisSize.min,
                 children: [
                   Expanded(
-                    child: SliverPostGridItem(
-                      post: post,
-                      index: index,
-                      borderRadius: BorderRadius.circular(
-                          state.settings.imageBorderRadius),
-                      gridSize: gridSize,
-                      scrollController: scrollController,
-                      imageQuality: state.settings.imageQuality,
-                      onTap: onTap,
-                    ),
+                    child: state.settings.detailsStyle == DetailsStyle.gallery
+                        ? SliverPostGridItemExperimental(
+                            post: post,
+                            index: index,
+                            borderRadius: BorderRadius.circular(
+                                state.settings.imageBorderRadius),
+                            gridSize: gridSize,
+                            scrollController: scrollController,
+                            imageQuality: state.settings.imageQuality,
+                            context: context,
+                            currentPage: currentPage,
+                            posts: posts,
+                          )
+                        : SliverPostGridItem(
+                            post: post,
+                            index: index,
+                            borderRadius: BorderRadius.circular(
+                                state.settings.imageBorderRadius),
+                            gridSize: gridSize,
+                            scrollController: scrollController,
+                            imageQuality: state.settings.imageQuality,
+                            onTap: onTap,
+                          ),
                   ),
                   postAnnotationBuilder?.call(context, post, index) ??
                       const SizedBox.shrink(),
@@ -148,6 +176,106 @@ class SliverPostGrid extends HookWidget {
   }
 }
 
+class SliverPostGridItemExperimental extends SliverPostGridItem {
+  SliverPostGridItemExperimental({
+    Key? key,
+    required ValueNotifier<int?> currentPage,
+    required BuildContext context,
+    required List<Post> posts,
+    required super.post,
+    required super.index,
+    required super.borderRadius,
+    required super.gridSize,
+    required super.imageQuality,
+    required super.scrollController,
+  }) : super(
+            key: key,
+            builder: (child) => ValueListenableBuilder<int?>(
+                  valueListenable: currentPage,
+                  builder: (context, value, listenableChild) {
+                    return Hero(
+                      tag: value != null
+                          ? ValueKey(posts[index].normalImageUrl)
+                          : ValueKey(post.normalImageUrl),
+                      child: listenableChild!,
+                    );
+                  },
+                  child: child,
+                ),
+            onTap: (p, i) {
+              Navigator.of(context).push(
+                PageRouteBuilder(
+                  fullscreenDialog: true,
+                  opaque: false,
+                  pageBuilder: (
+                    context,
+                    animation,
+                    secondaryAnimation,
+                  ) =>
+                      MultiBlocProvider(
+                    providers: [
+                      BlocProvider(create: (context) => SliverPostGridBloc()),
+                      BlocProvider(
+                        create: (context) => IsPostFavoritedBloc(
+                          accountRepository: context.read<IAccountRepository>(),
+                          favoritePostRepository:
+                              context.read<IFavoritePostRepository>(),
+                        )..add(
+                            IsPostFavoritedRequested(postId: posts[index].id)),
+                      ),
+                      BlocProvider(
+                          create: (context) => RecommendedArtistPostCubit(
+                                postRepository: RecommendedPostCacher(
+                                  cache: FifoCacher<String, List<Post>>(
+                                      capacity: 100),
+                                  postRepository:
+                                      context.read<IPostRepository>(),
+                                ),
+                              )..add(RecommendedPostRequested(
+                                  tags: posts[index].artistTags))),
+                      BlocProvider(
+                          create: (context) => PoolFromPostIdBloc(
+                                  poolRepository: PoolFromPostCacher(
+                                cache:
+                                    FifoCacher<int, List<Pool>>(capacity: 100),
+                                poolRepository: context.read<PoolRepository>(),
+                              ))
+                                ..add(PoolFromPostIdRequested(
+                                    postId: posts[index].id))),
+                      BlocProvider(
+                          create: (context) => RecommendedCharacterPostCubit(
+                                postRepository: RecommendedPostCacher(
+                                  cache: FifoCacher<String, List<Post>>(
+                                      capacity: 100),
+                                  postRepository:
+                                      context.read<IPostRepository>(),
+                                ),
+                              )..add(RecommendedPostRequested(
+                                  tags: posts[index].characterTags))),
+                      BlocProvider.value(
+                          value: BlocProvider.of<AuthenticationCubit>(context)),
+                      BlocProvider.value(
+                          value: BlocProvider.of<ApiEndpointCubit>(context)),
+                      BlocProvider.value(
+                          value: BlocProvider.of<ThemeBloc>(context)),
+                    ],
+                    child: RepositoryProvider.value(
+                      value: RepositoryProvider.of<ITagRepository>(context),
+                      child: PostDetailPageExperimental(
+                        initialIndex: i,
+                        onPageChanged: (index) {
+                          currentPage.value = index;
+                          scrollController.scrollToIndex(index);
+                        },
+                        posts: posts,
+                      ),
+                    ),
+                  ),
+                ),
+              );
+            });
+}
+
 class SliverPostGridItem extends StatelessWidget {
   const SliverPostGridItem({
     Key? key,
@@ -158,6 +286,7 @@ class SliverPostGridItem extends StatelessWidget {
     this.onTap,
     required this.imageQuality,
     required this.scrollController,
+    this.builder,
   }) : super(key: key);
 
   final Post post;
@@ -167,6 +296,8 @@ class SliverPostGridItem extends StatelessWidget {
   final GridSize gridSize;
   final BorderRadius? borderRadius;
   final ImageQuality imageQuality;
+
+  final Widget Function(Widget child)? builder;
 
   @override
   Widget build(BuildContext context) {
@@ -223,6 +354,16 @@ class SliverPostGridItem extends StatelessWidget {
   }
 
   Widget _buildImage(BuildContext context) {
+    final image = PostImage(
+      imageUrl: getImageUrlForDisplay(
+          post,
+          getImageQuality(
+            size: gridSize,
+            presetImageQuality: imageQuality,
+          )),
+      placeholderUrl: post.previewImageUrl,
+      borderRadius: borderRadius,
+    );
     return GestureDetector(
       onTap: () => onTap?.call(post, index),
       onLongPress: () {
@@ -238,16 +379,7 @@ class SliverPostGridItem extends StatelessWidget {
           ),
         );
       },
-      child: PostImage(
-        imageUrl: getImageUrlForDisplay(
-            post,
-            getImageQuality(
-              size: gridSize,
-              presetImageQuality: imageQuality,
-            )),
-        placeholderUrl: post.previewImageUrl,
-        borderRadius: borderRadius,
-      ),
+      child: builder?.call(image) ?? image,
     );
   }
 }

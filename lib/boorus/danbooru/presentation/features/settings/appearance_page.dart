@@ -133,6 +133,31 @@ class _AppearancePageState extends State<AppearancePage> {
                       .update(state.settings.copyWith(imageQuality: value)),
                 ),
               ),
+              SettingsTile(
+                leading: const FaIcon(FontAwesomeIcons.images),
+                title: const Text('Details style'),
+                selectedOption: state.settings.detailsStyle.name.sentenceCase,
+                onTap: () => showRadioOptionsModalBottomSheet<DetailsStyle>(
+                  context: context,
+                  items: DetailsStyle.values,
+                  titleBuilder: (item) => item == DetailsStyle.gallery
+                      ? Text(
+                          '${item.name.headerCase} (Experimental + Unstable)')
+                      : Text(item.name.headerCase),
+                  subtitleBuilder: (item) => item == DetailsStyle.gallery
+                      ? Text(
+                          'Swipe up to show more, swipe down to close. ',
+                          style: TextStyle(
+                            color: Theme.of(context).hintColor,
+                          ),
+                        )
+                      : null,
+                  groupValue: state.settings.detailsStyle,
+                  onChanged: (value) => context
+                      .read<SettingsCubit>()
+                      .update(state.settings.copyWith(detailsStyle: value)),
+                ),
+              ),
               const Padding(
                 padding: EdgeInsets.symmetric(horizontal: 8),
                 child: Text('Spacing'),

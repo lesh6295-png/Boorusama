@@ -42,11 +42,12 @@ class Recommended {
     required String title,
     required List<Post> posts,
   })  : _posts = posts,
-        _title = title;
-  final String _title;
+        rawTitle = title;
+  final String rawTitle;
   final List<Post> _posts;
 
-  String get title => _title.split(' ').join(', ').removeUnderscoreWithSpace();
+  String get title =>
+      rawTitle.split(' ').join(', ').removeUnderscoreWithSpace();
   List<Post> get posts => _posts;
 }
 
@@ -328,7 +329,7 @@ class _PostDetailState extends State<PostDetail> {
               '/artist',
               routeSettings: RouteSettings(
                 arguments: [
-                  item._title,
+                  item.rawTitle,
                   widget.post.normalImageUrl,
                 ],
               ),

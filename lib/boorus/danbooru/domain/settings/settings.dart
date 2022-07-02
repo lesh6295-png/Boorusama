@@ -16,6 +16,11 @@ enum ActionBarDisplayBehavior {
   staticAtBottom,
 }
 
+enum DetailsStyle {
+  classic,
+  gallery,
+}
+
 class Settings extends Equatable {
   const Settings({
     required this.safeMode,
@@ -30,6 +35,7 @@ class Settings extends Equatable {
     required this.imageGridSpacing,
     required this.actionBarDisplayBehavior,
     required this.imageQuality,
+    required this.detailsStyle,
   });
 
   Settings.fromJson(Map<String, dynamic> json)
@@ -56,7 +62,10 @@ class Settings extends Equatable {
             ? ImageQuality.values[json['imageQuality']]
             : ImageQuality.automatic,
         imageBorderRadius = json['imageBorderRadius'],
-        imageGridSpacing = json['imageGridSpacing'];
+        imageGridSpacing = json['imageGridSpacing'],
+        detailsStyle = json['detailsStyle'] != null
+            ? DetailsStyle.values[json['detailsStyle']]
+            : DetailsStyle.classic;
 
   static const defaultSettings = Settings(
     safeMode: true,
@@ -71,6 +80,7 @@ class Settings extends Equatable {
     imageGridSpacing: 4,
     actionBarDisplayBehavior: ActionBarDisplayBehavior.scrolling,
     imageQuality: ImageQuality.automatic,
+    detailsStyle: DetailsStyle.classic,
   );
 
   final String blacklistedTags;
@@ -89,6 +99,8 @@ class Settings extends Equatable {
 
   final ImageQuality imageQuality;
 
+  final DetailsStyle detailsStyle;
+
   Settings copyWith({
     String? blacklistedTags,
     String? language,
@@ -102,6 +114,7 @@ class Settings extends Equatable {
     double? imageGridSpacing,
     ActionBarDisplayBehavior? actionBarDisplayBehavior,
     ImageQuality? imageQuality,
+    DetailsStyle? detailsStyle,
   }) =>
       Settings(
         safeMode: safeMode ?? this.safeMode,
@@ -117,6 +130,7 @@ class Settings extends Equatable {
         actionBarDisplayBehavior:
             actionBarDisplayBehavior ?? this.actionBarDisplayBehavior,
         imageQuality: imageQuality ?? this.imageQuality,
+        detailsStyle: detailsStyle ?? this.detailsStyle,
       );
 
   Map<String, dynamic> toJson() => {
@@ -133,6 +147,7 @@ class Settings extends Equatable {
         'imageGridSpacing': imageGridSpacing,
         'actionBarDisplayBehavior': actionBarDisplayBehavior.index,
         'imageQuality': imageQuality.index,
+        'detailsStyle': detailsStyle.index,
       };
 
   @override
@@ -149,5 +164,6 @@ class Settings extends Equatable {
         imageGridSpacing,
         actionBarDisplayBehavior,
         imageQuality,
+        detailsStyle,
       ];
 }
