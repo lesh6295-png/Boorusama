@@ -18,6 +18,10 @@ class AccountPage extends StatelessWidget {
         onPressed: () {
           final bloc = context.read<AccountBloc>();
           showModalBottomSheet(
+            shape: const RoundedRectangleBorder(
+              borderRadius: BorderRadius.vertical(top: Radius.circular(25)),
+            ),
+            isScrollControlled: true,
             context: context,
             builder: (context) => AddAccountSheet(
               onSubmit: (name, key) => bloc.add(
@@ -88,27 +92,101 @@ class _AddAccountSheetState extends State<AddAccountSheet> {
 
   @override
   Widget build(BuildContext context) {
-    return Scaffold(
-      body: Column(
+    return Padding(
+      padding: EdgeInsets.only(
+        left: 30,
+        right: 30,
+        top: 1,
+        bottom: MediaQuery.of(context).viewInsets.bottom,
+      ),
+      child: Column(
+        mainAxisSize: MainAxisSize.min,
         children: [
+          Padding(
+            padding: const EdgeInsets.symmetric(vertical: 24),
+            child: Text(
+              'Add an account',
+              style: Theme.of(context).textTheme.headline6,
+            ),
+          ),
           TextField(
+            autofocus: true,
             controller: accountTextController,
+            decoration: _getDecoration(context, 'Account name'),
+          ),
+          const SizedBox(
+            height: 16,
           ),
           TextField(
             controller: keyTextController,
+            decoration: _getDecoration(context, 'API key'),
           ),
-          ElevatedButton(
-            onPressed: () {
-              widget.onSubmit(
-                accountTextController.text,
-                keyTextController.text,
-              );
-              Navigator.of(context).pop();
-            },
-            child: const Text('OK'),
+          Padding(
+            padding: const EdgeInsets.only(top: 8, bottom: 16),
+            child: Row(
+              mainAxisAlignment: MainAxisAlignment.spaceAround,
+              children: [
+                ElevatedButton(
+                  style: ElevatedButton.styleFrom(
+                    primary: Theme.of(context).cardColor,
+                    onPrimary: Theme.of(context).iconTheme.color,
+                    shape: RoundedRectangleBorder(
+                        borderRadius: BorderRadius.circular(16)),
+                  ),
+                  onPressed: () {
+                    Navigator.of(context).pop();
+                  },
+                  child: const Text('Cancel'),
+                ),
+                ElevatedButton(
+                  style: ElevatedButton.styleFrom(
+                    primary: Theme.of(context).cardColor,
+                    onPrimary: Theme.of(context).iconTheme.color,
+                    shape: RoundedRectangleBorder(
+                        borderRadius: BorderRadius.circular(16)),
+                  ),
+                  onPressed: () {
+                    widget.onSubmit(
+                      accountTextController.text,
+                      keyTextController.text,
+                    );
+                    Navigator.of(context).pop();
+                  },
+                  child: const Text('OK'),
+                ),
+              ],
+            ),
           )
         ],
       ),
     );
   }
 }
+
+InputDecoration _getDecoration(
+  BuildContext context,
+  String hint,
+) =>
+    InputDecoration(
+      hintText: hint,
+      filled: true,
+      fillColor: Theme.of(context).cardColor,
+      enabledBorder: OutlineInputBorder(
+        borderRadius: BorderRadius.circular(16),
+        borderSide: BorderSide.none,
+      ),
+      focusedBorder: OutlineInputBorder(
+        borderRadius: BorderRadius.circular(16),
+        borderSide: BorderSide(
+            color: Theme.of(context).colorScheme.secondary, width: 2),
+      ),
+      errorBorder: OutlineInputBorder(
+        borderRadius: BorderRadius.circular(16),
+        borderSide: BorderSide(color: Theme.of(context).errorColor),
+      ),
+      focusedErrorBorder: OutlineInputBorder(
+        borderRadius: BorderRadius.circular(16),
+        borderSide: BorderSide(color: Theme.of(context).errorColor, width: 2),
+      ),
+      contentPadding: const EdgeInsets.all(12),
+    );
