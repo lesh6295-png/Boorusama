@@ -88,6 +88,15 @@ class SideBarMenu extends StatelessWidget {
                                 AppRouter.router
                                     .navigateTo(context, '/settings');
                               },
+                            ),
+                            ListTile(
+                              leading: const Icon(Icons.account_box),
+                              title: const Text('Account'),
+                              onTap: () {
+                                Navigator.of(context).pop();
+                                AppRouter.router
+                                    .navigateTo(context, '/account');
+                              },
                             )
                           ]);
                     } else {

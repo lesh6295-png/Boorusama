@@ -10,6 +10,7 @@ import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:scroll_to_index/scroll_to_index.dart';
 
 // Project imports:
+import 'package:boorusama/boorus/danbooru/application/account/account_bloc.dart';
 import 'package:boorusama/boorus/danbooru/application/api/api.dart';
 import 'package:boorusama/boorus/danbooru/application/artist/artist.dart';
 import 'package:boorusama/boorus/danbooru/application/authentication/authentication.dart';
@@ -33,6 +34,7 @@ import 'package:boorusama/boorus/danbooru/domain/searches/i_search_history_repos
 import 'package:boorusama/boorus/danbooru/domain/tags/tags.dart';
 import 'package:boorusama/boorus/danbooru/infrastructure/repositories/repositories.dart';
 import 'package:boorusama/boorus/danbooru/infrastructure/services/tag_info_service.dart';
+import 'package:boorusama/boorus/danbooru/presentation/features/accounts/account_page.dart';
 import 'package:boorusama/boorus/danbooru/presentation/features/accounts/login/login_page.dart';
 import 'package:boorusama/boorus/danbooru/presentation/features/artists/artist_page.dart';
 import 'package:boorusama/boorus/danbooru/presentation/features/blacklisted_tags/blacklisted_tags_page.dart';
@@ -313,5 +315,19 @@ final blacklistedTagsHandler =
     child: BlacklistedTagsPage(
       userId: userId,
     ),
+  );
+});
+
+final accountHandler =
+    Handler(handlerFunc: (context, Map<String, List<String>> params) {
+  return BlocBuilder<ApiEndpointCubit, ApiEndpointState>(
+    builder: (context, state) {
+      return MultiBlocProvider(
+        providers: [
+          BlocProvider.value(value: context.read<AccountBloc>()),
+        ],
+        child: const AccountPage(),
+      );
+    },
   );
 });

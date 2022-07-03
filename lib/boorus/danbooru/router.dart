@@ -35,6 +35,8 @@ class AppRouter {
           transitionType: TransitionType.inFromRight)
       ..define('/favorites',
           handler: favoritesHandler, transitionType: TransitionType.inFromRight)
+      ..define('/account',
+          handler: accountHandler, transitionType: TransitionType.inFromRight)
       ..define('/users/blacklisted_tags',
           handler: blacklistedTagsHandler,
           transitionType: TransitionType.inFromRight);

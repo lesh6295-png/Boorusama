@@ -16,6 +16,7 @@ import 'package:sentry_flutter/sentry_flutter.dart';
 import 'package:boorusama/app_info.dart';
 import 'package:boorusama/boorus/booru_factory.dart';
 import 'package:boorusama/boorus/danbooru/application/account/account.dart';
+import 'package:boorusama/boorus/danbooru/application/account/account_bloc.dart';
 import 'package:boorusama/boorus/danbooru/application/api/api.dart';
 import 'package:boorusama/boorus/danbooru/application/artist/artist.dart';
 import 'package:boorusama/boorus/danbooru/application/authentication/authentication.dart';
@@ -46,6 +47,7 @@ import 'package:boorusama/boorus/danbooru/infrastructure/services/tag_info_servi
 import 'package:boorusama/core/application/download/i_download_service.dart';
 import 'package:boorusama/core/core.dart';
 import 'package:boorusama/core/infrastructure/caching/lru_cacher.dart';
+import 'package:boorusama/core/infrastructure/repositories/account_repository_impl.dart';
 import 'app.dart';
 import 'boorus/danbooru/application/favorites/favorites.dart';
 import 'boorus/danbooru/application/home/tag_list.dart';
@@ -85,6 +87,8 @@ void main() async {
   final accountBox = Hive.openBox('accounts');
   final accountRepo = AccountRepository(accountBox);
 
+  final accountRepo2 = AccountRepositoryImpl();
+
   final searchHistoryRepo =
       SearchHistoryRepository(settingRepository: settingRepository);
 
@@ -118,7 +122,7 @@ void main() async {
               BlocProvider(create: (_) => NetworkBloc()),
               BlocProvider(
                 create: (_) => ApiCubit(
-                  defaultUrl: defaultBooru.url,
+                  defaultBooru: defaultBooru,
                 ),
               ),
               BlocProvider(
@@ -230,6 +234,11 @@ void main() async {
                     blacklistedTagsRepository: blacklistedTagRepo,
                   )..add(const PostRefreshed());
 
+                  final accountBloc = AccountBloc(
+                    accountRepository: accountRepo2,
+                    booru: state.booru,
+                  )..add(const AccountRequested());
+
                   return MultiRepositoryProvider(
                     providers: [
                       RepositoryProvider<ITagRepository>.value(value: tagRepo),
@@ -277,6 +286,7 @@ void main() async {
                                 ThemeBloc(initialTheme: settings.themeMode)),
                         BlocProvider.value(value: poolOverviewBloc),
                         BlocProvider.value(value: postBloc),
+                        BlocProvider.value(value: accountBloc),
                       ],
                       child: MultiBlocListener(
                         listeners: [

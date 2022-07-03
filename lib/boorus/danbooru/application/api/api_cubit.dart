@@ -11,6 +11,7 @@ import 'package:boorusama/boorus/danbooru/infrastructure/apis/danbooru/danbooru_
 
 Dio newDio(String url) => Dio(BaseOptions(baseUrl: url));
 
+//TODO: simplify ApiEndpoint and Api
 class ApiEndpointState extends Equatable {
   const ApiEndpointState({
     required this.booru,
@@ -46,27 +47,40 @@ class ApiEndpointCubit extends Cubit<ApiEndpointState> {
 class ApiState extends Equatable {
   const ApiState({
     required this.api,
+    required this.booru,
   });
-  factory ApiState.initial(Dio dio) => ApiState(api: DanbooruApi(dio));
+  factory ApiState.initial(
+    Dio dio,
+    Booru booru,
+  ) =>
+      ApiState(api: DanbooruApi(dio), booru: booru);
 
   final Api api;
+  final Booru booru;
 
   ApiState copyWith({
     Api? api,
+    Booru? booru,
   }) =>
-      ApiState(api: api ?? this.api);
+      ApiState(
+        api: api ?? this.api,
+        booru: booru ?? this.booru,
+      );
 
   @override
-  List<Object?> get props => [api];
+  List<Object?> get props => [api, booru];
 }
 
 class ApiCubit extends Cubit<ApiState> {
   ApiCubit({
-    required String defaultUrl,
-  }) : super(ApiState.initial(newDio(defaultUrl)));
+    required Booru defaultBooru,
+  }) : super(ApiState.initial(newDio(defaultBooru.url), defaultBooru));
 
   void changeApi(Booru booru) {
     final dio = newDio(booru.url);
-    emit(state.copyWith(api: DanbooruApi(dio)));
+    emit(state.copyWith(
+      api: DanbooruApi(dio),
+      booru: booru,
+    ));
   }
 }
