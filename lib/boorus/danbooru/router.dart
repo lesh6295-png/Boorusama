@@ -26,8 +26,6 @@ class AppRouter {
           transitionType: TransitionType.inFromRight)
       ..define('/users/profile',
           handler: userHandler, transitionType: TransitionType.inFromRight)
-      ..define('/login',
-          handler: loginHandler, transitionType: TransitionType.inFromRight)
       ..define('/settings',
           handler: settingsHandler, transitionType: TransitionType.inFromRight)
       ..define('/pool/detail',

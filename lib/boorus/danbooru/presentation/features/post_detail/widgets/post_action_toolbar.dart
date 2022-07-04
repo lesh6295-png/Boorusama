@@ -9,12 +9,12 @@ import 'package:share_plus/share_plus.dart';
 
 // Project imports:
 import 'package:boorusama/boorus/danbooru/application/api/api.dart';
-import 'package:boorusama/boorus/danbooru/application/authentication/authentication.dart';
 import 'package:boorusama/boorus/danbooru/application/common.dart';
 import 'package:boorusama/boorus/danbooru/application/favorites/favorites.dart';
 import 'package:boorusama/boorus/danbooru/domain/favorites/favorites.dart';
 import 'package:boorusama/boorus/danbooru/domain/posts/posts.dart';
 import 'package:boorusama/boorus/danbooru/presentation/features/comment/comment_page.dart';
+import 'package:boorusama/core/application/accounts/accounts.dart';
 import 'package:boorusama/core/presentation/download_provider_widget.dart';
 
 class PostActionToolbar extends StatefulWidget {
@@ -34,7 +34,7 @@ class PostActionToolbar extends StatefulWidget {
 class _PostActionToolbarState extends State<PostActionToolbar> {
   @override
   Widget build(BuildContext context) {
-    return BlocBuilder<AuthenticationCubit, AuthenticationState>(
+    return BlocBuilder<CurrentAccountBloc, CurrentAccountState>(
       builder: (context, authState) => ButtonBar(
         buttonPadding: EdgeInsets.zero,
         alignment: MainAxisAlignment.spaceEvenly,
@@ -97,20 +97,20 @@ class _PostActionToolbarState extends State<PostActionToolbar> {
     );
   }
 
-  Widget _buildFavoriteButton(AuthenticationState authState) {
+  Widget _buildFavoriteButton(CurrentAccountState authState) {
     return BlocBuilder<IsPostFavoritedBloc, AsyncLoadState<bool>>(
       builder: (context, state) {
         if (state.status == LoadStatus.success) {
           return TextButton.icon(
             onPressed: () async {
               final favBloc = context.read<IsPostFavoritedBloc>();
-              if (authState is Unauthenticated) {
+              if (authState.account == null) {
                 const snackbar = SnackBar(
                   behavior: SnackBarBehavior.floating,
                   duration: Duration(seconds: 1),
                   elevation: 6,
                   content: Text(
-                    'You have to log in to perform this action',
+                    'You have to add an API key to perform this action',
                   ),
                 );
                 ScaffoldMessenger.of(context).showSnackBar(snackbar);

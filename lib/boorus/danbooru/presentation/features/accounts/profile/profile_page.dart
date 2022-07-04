@@ -7,7 +7,6 @@ import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:flutter_hooks/flutter_hooks.dart';
 
 // Project imports:
-import 'package:boorusama/boorus/danbooru/application/authentication/authentication.dart';
 import 'package:boorusama/boorus/danbooru/application/common.dart';
 import 'package:boorusama/boorus/danbooru/application/favorites/favorites.dart';
 import 'package:boorusama/boorus/danbooru/application/profile/profile.dart';
@@ -31,15 +30,6 @@ class ProfilePage extends HookWidget {
     return Scaffold(
       appBar: AppBar(
         title: Text('profile.profile'.tr()),
-        actions: <Widget>[
-          IconButton(
-              icon: const Icon(Icons.logout),
-              onPressed: () {
-                ReadContext(context).read<AuthenticationCubit>().logOut();
-                AppRouter.router
-                    .navigateTo(context, '/', clearStack: true, replace: true);
-              }),
-        ],
       ),
       body: SafeArea(
         child: BlocConsumer<ProfileCubit, AsyncLoadState<Profile>>(

@@ -47,7 +47,7 @@ class AccountPage extends StatelessWidget {
   Widget build(BuildContext context) {
     return Scaffold(
       appBar: AppBar(
-        title: const Text('API key'),
+        title: const Text('Account'),
       ),
       floatingActionButton: FloatingActionButton(
         onPressed: () =>
@@ -111,7 +111,7 @@ class AccountPage extends StatelessWidget {
                           ),
                           sliver: SliverToBoxAdapter(
                             child: Text(
-                              'API keys - ${state.accounts.length} key${state.accounts.length > 1 ? 's' : ''}'
+                              'Accounts - ${state.accounts.length} added'
                                   .toUpperCase(),
                               style: Theme.of(context)
                                   .textTheme
@@ -350,9 +350,9 @@ class _AddAccountSheetState extends State<AddAccountSheet> {
         mainAxisSize: MainAxisSize.min,
         children: [
           Padding(
-            padding: const EdgeInsets.symmetric(vertical: 24),
+            padding: const EdgeInsets.only(top: 24, bottom: 8),
             child: Text(
-              'Add an API key',
+              'Add an account',
               style: Theme.of(context).textTheme.headline6,
             ),
           ),
@@ -364,7 +364,7 @@ class _AddAccountSheetState extends State<AddAccountSheet> {
                   key: keyTextController.text,
                 ),
               ),
-              child: const Text('Verify'),
+              child: const Text('Check'),
             ),
             invalidBuilder: (context, verify) => TextButton.icon(
               onPressed: () => verify(
@@ -403,7 +403,7 @@ class _AddAccountSheetState extends State<AddAccountSheet> {
                 Icons.verified,
                 color: Colors.green,
               ),
-              label: const Text('Verified'),
+              label: const Text('Valid'),
             ),
             validatingBuilder: (context) => const TextButton(
               onPressed: null,

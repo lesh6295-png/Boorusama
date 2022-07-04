@@ -13,7 +13,6 @@ import 'package:scroll_to_index/scroll_to_index.dart';
 import 'package:boorusama/boorus/danbooru/application/account/account_bloc.dart';
 import 'package:boorusama/boorus/danbooru/application/api/api.dart';
 import 'package:boorusama/boorus/danbooru/application/artist/artist.dart';
-import 'package:boorusama/boorus/danbooru/application/authentication/authentication.dart';
 import 'package:boorusama/boorus/danbooru/application/favorites/favorites.dart';
 import 'package:boorusama/boorus/danbooru/application/note/note.dart';
 import 'package:boorusama/boorus/danbooru/application/pool/pool.dart';
@@ -35,7 +34,6 @@ import 'package:boorusama/boorus/danbooru/domain/tags/tags.dart';
 import 'package:boorusama/boorus/danbooru/infrastructure/repositories/repositories.dart';
 import 'package:boorusama/boorus/danbooru/infrastructure/services/tag_info_service.dart';
 import 'package:boorusama/boorus/danbooru/presentation/features/accounts/account_page.dart';
-import 'package:boorusama/boorus/danbooru/presentation/features/accounts/login/login_page.dart';
 import 'package:boorusama/boorus/danbooru/presentation/features/artists/artist_page.dart';
 import 'package:boorusama/boorus/danbooru/presentation/features/blacklisted_tags/blacklisted_tags_page.dart';
 import 'package:boorusama/boorus/danbooru/presentation/features/favorites/favorites_page.dart';
@@ -130,7 +128,6 @@ final postDetailHandler = Handler(handlerFunc: (
                 ),
               )..add(
                   RecommendedPostRequested(tags: posts[index].characterTags))),
-      BlocProvider.value(value: BlocProvider.of<AuthenticationCubit>(context)),
       BlocProvider.value(value: BlocProvider.of<ApiEndpointCubit>(context)),
       BlocProvider.value(value: BlocProvider.of<ThemeBloc>(context)),
     ],
@@ -227,16 +224,6 @@ final userHandler =
       BlocProvider.value(value: BlocProvider.of<FavoritesCubit>(context)),
     ],
     child: const ProfilePage(),
-  );
-});
-
-final loginHandler =
-    Handler(handlerFunc: (context, Map<String, List<String>> params) {
-  return MultiBlocProvider(
-    providers: [
-      BlocProvider.value(value: BlocProvider.of<AuthenticationCubit>(context!)),
-    ],
-    child: const LoginPage(),
   );
 });
 

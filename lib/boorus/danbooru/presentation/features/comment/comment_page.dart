@@ -6,12 +6,12 @@ import 'package:easy_localization/easy_localization.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 
 // Project imports:
-import 'package:boorusama/boorus/danbooru/application/authentication/authentication.dart';
 import 'package:boorusama/boorus/danbooru/application/comment/comment.dart';
 import 'package:boorusama/boorus/danbooru/application/common.dart';
 import 'package:boorusama/boorus/danbooru/presentation/features/comment/comment_create_page.dart';
 import 'package:boorusama/boorus/danbooru/presentation/features/comment/comment_update_page.dart';
 import 'package:boorusama/boorus/danbooru/presentation/shared/modal_options.dart';
+import 'package:boorusama/core/application/accounts/current_account_bloc.dart';
 import 'widgets/comment_item.dart';
 
 class CommentPage extends StatefulWidget {
@@ -37,9 +37,9 @@ class _CommentPageState extends State<CommentPage> {
   Widget build(BuildContext context) {
     return Scaffold(
       floatingActionButton:
-          BlocBuilder<AuthenticationCubit, AuthenticationState>(
+          BlocBuilder<CurrentAccountBloc, CurrentAccountState>(
         builder: (context, state) {
-          if (state is Authenticated) {
+          if (state.account != null) {
             return FloatingActionButton(
               onPressed: () => Navigator.of(context).push(MaterialPageRoute(
                   builder: (context) =>
@@ -81,14 +81,14 @@ class _CommentPageState extends State<CommentPage> {
     if (comments.isNotEmpty) {
       return Container(
         padding: const EdgeInsets.all(8),
-        child: BlocBuilder<AuthenticationCubit, AuthenticationState>(
+        child: BlocBuilder<CurrentAccountBloc, CurrentAccountState>(
           builder: (context, state) {
             return ListView.builder(
               itemBuilder: (context, index) {
                 final comment = comments[index];
                 return ListTile(
                   title: CommentItem(
-                    hasVoteSection: state is Authenticated,
+                    hasVoteSection: state.account != null,
                     onVoteChanged: (event) {
                       if (event == VoteEvent.upvoted) {
                         context
@@ -112,7 +112,7 @@ class _CommentPageState extends State<CommentPage> {
                     },
                     comment: comment,
                     onReply: () => _handleReplyTap(comment, widget.postId),
-                    moreBuilder: (context) => state is Authenticated
+                    moreBuilder: (context) => state.account != null
                         ? _buildMoreButton(comment)
                         : const SizedBox.shrink(),
                   ),

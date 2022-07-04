@@ -5,27 +5,34 @@ import 'package:flutter_bloc/flutter_bloc.dart';
 // Project imports:
 import 'package:boorusama/boorus/booru.dart';
 import 'package:boorusama/boorus/danbooru/application/common.dart';
+import 'package:boorusama/boorus/danbooru/domain/profile/i_profile_repository.dart';
 import 'package:boorusama/core/domain/accounts/accounts.dart';
 
 class CurrentAccountState extends Equatable {
   const CurrentAccountState({
     required this.account,
+    required this.userId,
   });
 
-  factory CurrentAccountState.initial() =>
-      const CurrentAccountState(account: null);
+  factory CurrentAccountState.initial() => const CurrentAccountState(
+        account: null,
+        userId: null,
+      );
 
   final Account? account;
+  final int? userId;
 
   CurrentAccountState copyWith({
     Account? account,
+    int? userId,
   }) =>
       CurrentAccountState(
         account: account,
+        userId: userId,
       );
 
   @override
-  List<Object?> get props => [account];
+  List<Object?> get props => [account, userId];
 }
 
 abstract class CurrentAccountEvent extends Equatable {
@@ -33,14 +40,10 @@ abstract class CurrentAccountEvent extends Equatable {
 }
 
 class CurrentAccountFetched extends CurrentAccountEvent {
-  const CurrentAccountFetched({
-    required this.account,
-  });
-
-  final Account? account;
+  const CurrentAccountFetched();
 
   @override
-  List<Object?> get props => [account];
+  List<Object?> get props => [];
 }
 
 class CurrentAccountChanged extends CurrentAccountEvent {
@@ -65,6 +68,7 @@ class CurrentAccountBloc
     extends Bloc<CurrentAccountEvent, CurrentAccountState> {
   CurrentAccountBloc({
     required CurrentAccountRepository currentAccountRepository,
+    required IProfileRepository profileRepository,
     required Booru currentBooru,
   }) : super(CurrentAccountState.initial()) {
     on<CurrentAccountFetched>((event, emit) async {
@@ -73,7 +77,18 @@ class CurrentAccountBloc
         // onLoading: () => emit(loading),
         onFailure: (error, stackTrace) => emit(state.copyWith()),
         onSuccess: (data) async {
-          emit(state.copyWith(account: data));
+          if (data != null) {
+            final profile = await profileRepository.getProfile(
+              username: data.name,
+              apiKey: data.key,
+            );
+            emit(state.copyWith(
+              account: data,
+              userId: profile?.id,
+            ));
+          } else {
+            emit(state.copyWith());
+          }
         },
       );
     });
@@ -85,7 +100,14 @@ class CurrentAccountBloc
         // onLoading: () => emit(loading),
         // onFailure: (error, stackTrace) => emit(error),
         onSuccess: (_) async {
-          emit(state.copyWith(account: event.account));
+          final profile = await profileRepository.getProfile(
+            username: event.account.name,
+            apiKey: event.account.key,
+          );
+          emit(state.copyWith(
+            account: event.account,
+            userId: profile?.id,
+          ));
         },
       );
     });

@@ -18,7 +18,6 @@ import 'package:boorusama/boorus/booru_factory.dart';
 import 'package:boorusama/boorus/danbooru/application/account/account.dart';
 import 'package:boorusama/boorus/danbooru/application/api/api.dart';
 import 'package:boorusama/boorus/danbooru/application/artist/artist.dart';
-import 'package:boorusama/boorus/danbooru/application/authentication/authentication.dart';
 import 'package:boorusama/boorus/danbooru/application/comment/comment.dart';
 import 'package:boorusama/boorus/danbooru/application/explore/explore.dart';
 import 'package:boorusama/boorus/danbooru/application/networking/networking.dart';
@@ -216,13 +215,6 @@ void main() async {
                   );
                   final artistCommentaryCubit = ArtistCommentaryCubit(
                       artistCommentaryRepository: artistCommentaryRepo);
-                  final accountCubit =
-                      AccountCubit(accountRepository: accountRepo)
-                        ..getCurrentAccount();
-                  final authenticationCubit = AuthenticationCubit(
-                    accountRepository: accountRepo,
-                    profileRepository: profileRepo,
-                  )..logIn();
                   final userBlacklistedTagsBloc = UserBlacklistedTagsBloc(
                       userRepository: userRepo,
                       blacklistedTagsRepository: blacklistedTagRepo);
@@ -243,8 +235,10 @@ void main() async {
                   )..add(const AccountRequested());
 
                   final currentAccountBloc = CurrentAccountBloc(
-                      currentAccountRepository: currentAccountRepo,
-                      currentBooru: state.booru);
+                    profileRepository: profileRepo,
+                    currentAccountRepository: currentAccountRepo,
+                    currentBooru: state.booru,
+                  )..add(const CurrentAccountFetched());
 
                   return MultiRepositoryProvider(
                     providers: [
@@ -285,8 +279,6 @@ void main() async {
                         BlocProvider.value(value: profileCubit),
                         BlocProvider.value(value: commentBloc),
                         BlocProvider.value(value: artistCommentaryCubit),
-                        BlocProvider.value(value: accountCubit),
-                        BlocProvider.value(value: authenticationCubit),
                         BlocProvider.value(value: userBlacklistedTagsBloc),
                         BlocProvider(
                             create: (context) =>
@@ -298,16 +290,6 @@ void main() async {
                       ],
                       child: MultiBlocListener(
                         listeners: [
-                          BlocListener<AuthenticationCubit,
-                              AuthenticationState>(
-                            listener: (context, state) {
-                              if (state is Authenticated) {
-                                accountCubit.setAccount(state.account);
-                              } else if (state is Unauthenticated) {
-                                accountCubit.removeAccount();
-                              }
-                            },
-                          ),
                           BlocListener<UserBlacklistedTagsBloc,
                               UserBlacklistedTagsState>(
                             listenWhen: (previous, current) =>

@@ -8,10 +8,8 @@ import 'package:font_awesome_flutter/font_awesome_flutter.dart';
 import 'package:url_launcher/url_launcher.dart';
 
 // Project imports:
-import 'package:boorusama/boorus/danbooru/application/account/account.dart';
-import 'package:boorusama/boorus/danbooru/application/common.dart';
-import 'package:boorusama/boorus/danbooru/domain/accounts/accounts.dart';
 import 'package:boorusama/boorus/danbooru/router.dart';
+import 'package:boorusama/core/application/accounts/current_account_bloc.dart';
 import 'package:boorusama/core/utils.dart';
 import 'package:boorusama/main.dart';
 
@@ -29,79 +27,62 @@ class SideBarMenu extends StatelessWidget {
           children: [
             Expanded(
               child: SingleChildScrollView(
-                child: BlocBuilder<AccountCubit, AsyncLoadState<Account>>(
+                child: BlocBuilder<CurrentAccountBloc, CurrentAccountState>(
                   builder: (context, state) {
-                    if (state.status == LoadStatus.success) {
-                      return Column(
-                          crossAxisAlignment: CrossAxisAlignment.start,
-                          children: [
-                            if (state.data! == Account.empty)
-                              ListTile(
-                                leading: const Icon(Icons.login),
-                                title: Text('sideMenu.login'.tr()),
-                                onTap: () {
-                                  Navigator.of(context).pop();
-                                  AppRouter.router
-                                      .navigateTo(context, '/login');
-                                },
-                              )
-                            else
-                              ListTile(
-                                leading: const Icon(Icons.person),
-                                title: Text('sideMenu.profile'.tr()),
-                                onTap: () {
-                                  Navigator.of(context).pop();
-                                  AppRouter.router
-                                      .navigateTo(context, '/users/profile');
-                                },
-                              ),
-                            if (state.data! != Account.empty)
-                              ListTile(
-                                leading:
-                                    const FaIcon(FontAwesomeIcons.solidHeart),
-                                title: Text('profile.favorites'.tr()),
-                                onTap: () {
-                                  Navigator.of(context).pop();
-                                  AppRouter.router.navigateTo(
-                                      context, '/favorites',
-                                      routeSettings: RouteSettings(
-                                          arguments: [state.data!.username]));
-                                },
-                              ),
-                            if (state.data! != Account.empty)
-                              ListTile(
-                                leading: const FaIcon(FontAwesomeIcons.ban),
-                                title: const Text('Blacklisted tags'),
-                                onTap: () {
-                                  Navigator.of(context).pop();
-                                  AppRouter.router.navigateTo(
-                                      context, '/users/blacklisted_tags',
-                                      routeSettings: RouteSettings(
-                                          arguments: [state.data!.id]));
-                                },
-                              ),
+                    return Column(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
+                          ListTile(
+                            leading: const Icon(Icons.account_box),
+                            title: const Text('Account'),
+                            onTap: () {
+                              Navigator.of(context).pop();
+                              AppRouter.router.navigateTo(context, '/account');
+                            },
+                          ),
+                          if (state.account != null) ...[
                             ListTile(
-                              leading: const Icon(Icons.settings),
-                              title: Text('sideMenu.settings'.tr()),
+                              leading: const Icon(Icons.person),
+                              title: Text('sideMenu.profile'.tr()),
                               onTap: () {
                                 Navigator.of(context).pop();
                                 AppRouter.router
-                                    .navigateTo(context, '/settings');
+                                    .navigateTo(context, '/users/profile');
                               },
                             ),
                             ListTile(
-                              leading: const Icon(Icons.account_box),
-                              title: const Text('Account'),
+                              leading:
+                                  const FaIcon(FontAwesomeIcons.solidHeart),
+                              title: Text('profile.favorites'.tr()),
                               onTap: () {
                                 Navigator.of(context).pop();
-                                AppRouter.router
-                                    .navigateTo(context, '/account');
+                                AppRouter.router.navigateTo(
+                                    context, '/favorites',
+                                    routeSettings: RouteSettings(
+                                        arguments: [state.account!.name]));
                               },
-                            )
-                          ]);
-                    } else {
-                      return const SizedBox.shrink();
-                    }
+                            ),
+                            ListTile(
+                              leading: const FaIcon(FontAwesomeIcons.ban),
+                              title: const Text('Blacklisted tags'),
+                              onTap: () {
+                                Navigator.of(context).pop();
+                                AppRouter.router.navigateTo(
+                                    context, '/users/blacklisted_tags',
+                                    routeSettings: RouteSettings(
+                                        arguments: [state.userId]));
+                              },
+                            ),
+                          ],
+                          ListTile(
+                            leading: const Icon(Icons.settings),
+                            title: Text('sideMenu.settings'.tr()),
+                            onTap: () {
+                              Navigator.of(context).pop();
+                              AppRouter.router.navigateTo(context, '/settings');
+                            },
+                          ),
+                        ]);
                   },
                 ),
               ),
