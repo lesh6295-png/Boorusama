@@ -6,6 +6,8 @@ import 'package:flutter_bloc/flutter_bloc.dart';
 
 // Project imports:
 import 'package:boorusama/boorus/danbooru/application/account/account_bloc.dart';
+import 'package:boorusama/core/domain/accounts/accounts.dart';
+import 'package:boorusama/core/presentation/account_verification_provider.dart';
 
 class AccountPage extends StatelessWidget {
   const AccountPage({Key? key}) : super(key: key);
@@ -107,6 +109,60 @@ class _AddAccountSheetState extends State<AddAccountSheet> {
             child: Text(
               'Add an account',
               style: Theme.of(context).textTheme.headline6,
+            ),
+          ),
+          AccountVerificationProvider(
+            initialBuilder: (context, verify) => TextButton(
+              onPressed: () => verify(
+                AccountAddData(
+                  name: accountTextController.text,
+                  key: keyTextController.text,
+                ),
+              ),
+              child: const Text('Verify'),
+            ),
+            invalidBuilder: (context, verify) => TextButton.icon(
+              onPressed: () => verify(
+                AccountAddData(
+                  name: accountTextController.text,
+                  key: keyTextController.text,
+                ),
+              ),
+              icon: const Icon(
+                Icons.close,
+                color: Colors.red,
+              ),
+              label: const Text('Invalid'),
+            ),
+            maybeInvalidBuilder: (context, verify) => TextButton.icon(
+              onPressed: () => verify(
+                AccountAddData(
+                  name: accountTextController.text,
+                  key: keyTextController.text,
+                ),
+              ),
+              icon: const Icon(
+                Icons.warning,
+                color: Colors.yellow,
+              ),
+              label: const Text('Maybe invalid'),
+            ),
+            validBuilder: (context, verify) => TextButton.icon(
+              onPressed: () => verify(
+                AccountAddData(
+                  name: accountTextController.text,
+                  key: keyTextController.text,
+                ),
+              ),
+              icon: const Icon(
+                Icons.verified,
+                color: Colors.green,
+              ),
+              label: const Text('Verified'),
+            ),
+            validatingBuilder: (context) => const TextButton(
+              onPressed: null,
+              child: Text('Validating...'),
             ),
           ),
           TextField(
