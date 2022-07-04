@@ -4,9 +4,11 @@ import 'package:flutter/material.dart';
 // Package imports:
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:font_awesome_flutter/font_awesome_flutter.dart';
+import 'package:rxdart/rxdart.dart';
 
 // Project imports:
 import 'package:boorusama/boorus/danbooru/application/account/account.dart';
+import 'package:boorusama/common/stream/stream.dart';
 import 'package:boorusama/core/application/accounts/accounts.dart';
 import 'package:boorusama/core/domain/accounts/accounts.dart';
 import 'package:boorusama/core/presentation/account_verification_provider.dart';
@@ -151,10 +153,29 @@ class _AddAccountSheetState extends State<AddAccountSheet> {
   final accountTextController = TextEditingController();
   final keyTextController = TextEditingController();
 
+  final compositeSubscription = CompositeSubscription();
+
+  final enableOk = ValueNotifier(false);
+
+  @override
+  void initState() {
+    super.initState();
+
+    Rx.combineLatest2<String, String, bool>(
+      accountTextController.textAsStream(),
+      keyTextController.textAsStream(),
+      (a, b) => a.isNotEmpty && b.isNotEmpty,
+    )
+        .distinct()
+        .listen((event) => enableOk.value = event)
+        .addTo(compositeSubscription);
+  }
+
   @override
   void dispose() {
     accountTextController.dispose();
     keyTextController.dispose();
+    compositeSubscription.dispose();
     super.dispose();
   }
 
@@ -260,21 +281,26 @@ class _AddAccountSheetState extends State<AddAccountSheet> {
                   },
                   child: const Text('Cancel'),
                 ),
-                ElevatedButton(
-                  style: ElevatedButton.styleFrom(
-                    primary: Theme.of(context).cardColor,
-                    onPrimary: Theme.of(context).iconTheme.color,
-                    shape: RoundedRectangleBorder(
-                        borderRadius: BorderRadius.circular(16)),
+                ValueListenableBuilder<bool>(
+                  valueListenable: enableOk,
+                  builder: (context, enable, _) => ElevatedButton(
+                    style: ElevatedButton.styleFrom(
+                      primary: Theme.of(context).cardColor,
+                      onPrimary: Theme.of(context).iconTheme.color,
+                      shape: RoundedRectangleBorder(
+                          borderRadius: BorderRadius.circular(16)),
+                    ),
+                    onPressed: enable
+                        ? () {
+                            widget.onSubmit(
+                              accountTextController.text,
+                              keyTextController.text,
+                            );
+                            Navigator.of(context).pop();
+                          }
+                        : null,
+                    child: const Text('OK'),
                   ),
-                  onPressed: () {
-                    widget.onSubmit(
-                      accountTextController.text,
-                      keyTextController.text,
-                    );
-                    Navigator.of(context).pop();
-                  },
-                  child: const Text('OK'),
                 ),
               ],
             ),

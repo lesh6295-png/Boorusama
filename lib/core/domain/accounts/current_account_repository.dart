@@ -1,3 +1,4 @@
+// Project imports:
 import 'package:boorusama/boorus/booru.dart';
 import 'package:boorusama/core/domain/accounts/accounts.dart';
 
