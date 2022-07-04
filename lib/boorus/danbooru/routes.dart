@@ -326,7 +326,7 @@ final accountHandler =
         providers: [
           BlocProvider.value(value: context.read<AccountBloc>()),
         ],
-        child: const AccountPage(),
+        child: AccountPage(),
       );
     },
   );
