@@ -48,34 +48,19 @@ class AccountPage extends StatelessWidget {
           return Column(
             children: [
               if (currentAccState.account == null)
-                Column(
-                  children: const [
-                    Padding(
-                      padding: EdgeInsets.all(8),
-                      child: Card(
-                        child: ListTile(
-                          leading: FaIcon(FontAwesomeIcons.userSecret),
-                          title: Text('Anonymous'),
-                        ),
-                      ),
-                    ),
-                  ],
+                const _CurrentUserTile(
+                  title: Text('Anonymous'),
+                  subtitle: Text('Lurking...'),
+                  icon: FaIcon(FontAwesomeIcons.userSecret),
                 )
               else
-                Column(
-                  children: [
-                    Padding(
-                      padding: const EdgeInsets.all(8),
-                      child: Card(
-                        child: ListTile(
-                          leading: const FaIcon(FontAwesomeIcons.user),
-                          title: Text(currentAccState.account!.name),
-                        ),
-                      ),
-                    ),
-                  ],
+                _CurrentUserTile(
+                  title: Text(currentAccState.account!.name),
+                  icon: const FaIcon(FontAwesomeIcons.user),
                 ),
-              const Divider(),
+              const Divider(
+                thickness: 2,
+              ),
               BlocConsumer<AccountBloc, AccountState>(
                 listener: (context, state) {
                   if (state.accounts.isEmpty) {
@@ -83,48 +68,84 @@ class AccountPage extends StatelessWidget {
                         .read<CurrentAccountBloc>()
                         .add(const CurrentAccountCleared());
                   }
+
+                  if (state.accounts.length == 1 &&
+                      currentAccState.account == null) {
+                    context.read<CurrentAccountBloc>().add(
+                        CurrentAccountChanged(account: state.accounts.first));
+                  }
                 },
                 builder: (context, state) {
-                  if (state.accounts.isEmpty) {
-                    return const Center(
-                      child: Text('No API key added'),
-                    );
-                  }
-
                   return Expanded(
-                    child: ListView.builder(
-                      itemBuilder: (context, index) {
-                        final account = state.accounts[index];
-                        final selected = currentAccState.account != null &&
-                            currentAccState.account!.id == account.id;
-                        return ListTile(
-                          visualDensity: VisualDensity.compact,
-                          onTap: () => selected
-                              ? context
-                                  .read<CurrentAccountBloc>()
-                                  .add(const CurrentAccountCleared())
-                              : context
-                                  .read<CurrentAccountBloc>()
-                                  .add(CurrentAccountChanged(account: account)),
-                          title: Text(account.name),
-                          selected: selected,
-                          selectedColor:
-                              Theme.of(context).colorScheme.onBackground,
-                          selectedTileColor:
-                              Theme.of(context).colorScheme.primary,
-                          trailing: ElevatedButton(
-                            style: ElevatedButton.styleFrom(
-                              primary: Theme.of(context).cardColor,
-                              onPrimary: Theme.of(context).iconTheme.color,
-                            ),
-                            onPressed: () => context
-                                .read<AccountBloc>()
-                                .add(AccountRemoved(id: account.id)),
-                            child: const Text('Remove'),
+                    child: CustomScrollView(
+                      slivers: [
+                        SliverPadding(
+                          padding: const EdgeInsets.symmetric(
+                            horizontal: 8,
+                            vertical: 16,
                           ),
-                        );
-                      },
-                      itemCount: state.accounts.length,
+                          sliver: SliverToBoxAdapter(
+                              child: Text(
+                            'API keys - ${state.accounts.length} key${state.accounts.length > 1 ? 's' : ''}'
+                                .toUpperCase(),
+                            style: Theme.of(context)
+                                .textTheme
+                                .titleMedium!
+                                .copyWith(
+                                  color: Theme.of(context).hintColor,
+                                  fontWeight: FontWeight.bold,
+                                ),
+                          )),
+                        ),
+                        SliverList(
+                          delegate: SliverChildBuilderDelegate(
+                            (context, index) {
+                              final account = state.accounts[index];
+                              final selected =
+                                  currentAccState.account != null &&
+                                      currentAccState.account!.id == account.id;
+                              return ListTile(
+                                visualDensity: VisualDensity.compact,
+                                onTap: () => selected
+                                    ? context
+                                        .read<CurrentAccountBloc>()
+                                        .add(const CurrentAccountCleared())
+                                    : context.read<CurrentAccountBloc>().add(
+                                        CurrentAccountChanged(
+                                            account: account)),
+                                title: Text(account.name),
+                                selected: selected,
+                                selectedColor:
+                                    Theme.of(context).colorScheme.onBackground,
+                                selectedTileColor:
+                                    Theme.of(context).colorScheme.primary,
+                                trailing: ElevatedButton(
+                                  style: ElevatedButton.styleFrom(
+                                    primary: Theme.of(context).cardColor,
+                                    onPrimary:
+                                        Theme.of(context).iconTheme.color,
+                                  ),
+                                  onPressed: () {
+                                    context
+                                        .read<AccountBloc>()
+                                        .add(AccountRemoved(id: account.id));
+
+                                    if (currentAccState.account != null &&
+                                        currentAccState.account!.id ==
+                                            account.id) {
+                                      context
+                                          .read<CurrentAccountBloc>()
+                                          .add(const CurrentAccountCleared());
+                                    }
+                                  },
+                                  child: const Text('Remove'),
+                                ),
+                              );
+                            },
+                            childCount: state.accounts.length,
+                          ),
+                        ),
+                      ],
                     ),
                   );
                 },
@@ -133,6 +154,38 @@ class AccountPage extends StatelessWidget {
           );
         },
       ),
+    );
+  }
+}
+
+class _CurrentUserTile extends StatelessWidget {
+  const _CurrentUserTile({
+    Key? key,
+    required this.icon,
+    required this.title,
+    this.subtitle,
+  }) : super(key: key);
+
+  final Widget icon;
+  final Widget title;
+  final Widget? subtitle;
+
+  @override
+  Widget build(BuildContext context) {
+    return Column(
+      children: [
+        Padding(
+          padding: const EdgeInsets.all(16),
+          child: Card(
+            child: ListTile(
+              visualDensity: VisualDensity.comfortable,
+              leading: icon,
+              title: title,
+              subtitle: subtitle,
+            ),
+          ),
+        ),
+      ],
     );
   }
 }
