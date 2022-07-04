@@ -16,7 +16,6 @@ import 'package:sentry_flutter/sentry_flutter.dart';
 import 'package:boorusama/app_info.dart';
 import 'package:boorusama/boorus/booru_factory.dart';
 import 'package:boorusama/boorus/danbooru/application/account/account.dart';
-import 'package:boorusama/boorus/danbooru/application/account/account_bloc.dart';
 import 'package:boorusama/boorus/danbooru/application/api/api.dart';
 import 'package:boorusama/boorus/danbooru/application/artist/artist.dart';
 import 'package:boorusama/boorus/danbooru/application/authentication/authentication.dart';
@@ -44,10 +43,12 @@ import 'package:boorusama/boorus/danbooru/infrastructure/local/repositories/sear
 import 'package:boorusama/boorus/danbooru/infrastructure/services/device_info_service.dart';
 import 'package:boorusama/boorus/danbooru/infrastructure/services/download_service.dart';
 import 'package:boorusama/boorus/danbooru/infrastructure/services/tag_info_service.dart';
+import 'package:boorusama/core/application/accounts/accounts.dart';
 import 'package:boorusama/core/application/download/i_download_service.dart';
 import 'package:boorusama/core/core.dart';
 import 'package:boorusama/core/infrastructure/caching/lru_cacher.dart';
 import 'package:boorusama/core/infrastructure/repositories/account_repository_impl.dart';
+import 'package:boorusama/core/infrastructure/repositories/current_accout_repository_impl.dart';
 import 'app.dart';
 import 'boorus/danbooru/application/favorites/favorites.dart';
 import 'boorus/danbooru/application/home/tag_list.dart';
@@ -200,6 +201,8 @@ void main() async {
                   final commentVoteRepo =
                       CommentVoteApiRepository(api, accountRepo);
 
+                  final currentAccountRepo = CurrentAccountRepositoryImpl();
+
                   final favoritedCubit =
                       FavoritesCubit(postRepository: postRepo);
                   final popularSearchCubit =
@@ -238,6 +241,10 @@ void main() async {
                     accountRepository: accountRepo2,
                     booru: state.booru,
                   )..add(const AccountRequested());
+
+                  final currentAccountBloc = CurrentAccountBloc(
+                      currentAccountRepository: currentAccountRepo,
+                      currentBooru: state.booru);
 
                   return MultiRepositoryProvider(
                     providers: [
@@ -287,6 +294,7 @@ void main() async {
                         BlocProvider.value(value: poolOverviewBloc),
                         BlocProvider.value(value: postBloc),
                         BlocProvider.value(value: accountBloc),
+                        BlocProvider.value(value: currentAccountBloc),
                       ],
                       child: MultiBlocListener(
                         listeners: [

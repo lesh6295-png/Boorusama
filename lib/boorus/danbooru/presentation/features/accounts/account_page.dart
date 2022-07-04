@@ -3,9 +3,11 @@ import 'package:flutter/material.dart';
 
 // Package imports:
 import 'package:flutter_bloc/flutter_bloc.dart';
+import 'package:font_awesome_flutter/font_awesome_flutter.dart';
 
 // Project imports:
-import 'package:boorusama/boorus/danbooru/application/account/account_bloc.dart';
+import 'package:boorusama/boorus/danbooru/application/account/account.dart';
+import 'package:boorusama/core/application/accounts/accounts.dart';
 import 'package:boorusama/core/domain/accounts/accounts.dart';
 import 'package:boorusama/core/presentation/account_verification_provider.dart';
 
@@ -15,7 +17,9 @@ class AccountPage extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      appBar: AppBar(),
+      appBar: AppBar(
+        title: const Text('API key management'),
+      ),
       floatingActionButton: FloatingActionButton(
         onPressed: () {
           final bloc = context.read<AccountBloc>();
@@ -37,31 +41,93 @@ class AccountPage extends StatelessWidget {
         },
         child: const Icon(Icons.add),
       ),
-      body: BlocBuilder<AccountBloc, AccountState>(
-        buildWhen: (previous, current) =>
-            previous.accounts.length != current.accounts.length,
-        builder: (context, state) {
-          if (state.accounts.isEmpty) {
-            return const Center(
-              child: Text('No account added'),
-            );
-          }
-
-          return ListView.builder(
-            itemBuilder: (context, index) {
-              final account = state.accounts[index];
-              return ListTile(
-                title: Text(account.name),
-                subtitle: Text(account.key),
-                trailing: IconButton(
-                  onPressed: () => context
-                      .read<AccountBloc>()
-                      .add(AccountRemoved(id: account.id)),
-                  icon: const Icon(Icons.close),
+      body: BlocBuilder<CurrentAccountBloc, CurrentAccountState>(
+        builder: (context, currentAccState) {
+          return Column(
+            children: [
+              if (currentAccState.account == null)
+                Column(
+                  children: const [
+                    Padding(
+                      padding: EdgeInsets.all(8),
+                      child: Card(
+                        child: ListTile(
+                          leading: FaIcon(FontAwesomeIcons.userSecret),
+                          title: Text('Anonymous'),
+                        ),
+                      ),
+                    ),
+                  ],
+                )
+              else
+                Column(
+                  children: [
+                    Padding(
+                      padding: const EdgeInsets.all(8),
+                      child: Card(
+                        child: ListTile(
+                          leading: const FaIcon(FontAwesomeIcons.user),
+                          title: Text(currentAccState.account!.name),
+                        ),
+                      ),
+                    ),
+                  ],
                 ),
-              );
-            },
-            itemCount: state.accounts.length,
+              const Divider(),
+              BlocConsumer<AccountBloc, AccountState>(
+                listener: (context, state) {
+                  if (state.accounts.isEmpty) {
+                    context
+                        .read<CurrentAccountBloc>()
+                        .add(const CurrentAccountCleared());
+                  }
+                },
+                builder: (context, state) {
+                  if (state.accounts.isEmpty) {
+                    return const Center(
+                      child: Text('No API key added'),
+                    );
+                  }
+
+                  return Expanded(
+                    child: ListView.builder(
+                      itemBuilder: (context, index) {
+                        final account = state.accounts[index];
+                        final selected = currentAccState.account != null &&
+                            currentAccState.account!.id == account.id;
+                        return ListTile(
+                          visualDensity: VisualDensity.compact,
+                          onTap: () => selected
+                              ? context
+                                  .read<CurrentAccountBloc>()
+                                  .add(const CurrentAccountCleared())
+                              : context
+                                  .read<CurrentAccountBloc>()
+                                  .add(CurrentAccountChanged(account: account)),
+                          title: Text(account.name),
+                          selected: selected,
+                          selectedColor:
+                              Theme.of(context).colorScheme.onBackground,
+                          selectedTileColor:
+                              Theme.of(context).colorScheme.primary,
+                          trailing: ElevatedButton(
+                            style: ElevatedButton.styleFrom(
+                              primary: Theme.of(context).cardColor,
+                              onPrimary: Theme.of(context).iconTheme.color,
+                            ),
+                            onPressed: () => context
+                                .read<AccountBloc>()
+                                .add(AccountRemoved(id: account.id)),
+                            child: const Text('Remove'),
+                          ),
+                        );
+                      },
+                      itemCount: state.accounts.length,
+                    ),
+                  );
+                },
+              ),
+            ],
           );
         },
       ),
@@ -107,7 +173,7 @@ class _AddAccountSheetState extends State<AddAccountSheet> {
           Padding(
             padding: const EdgeInsets.symmetric(vertical: 24),
             child: Text(
-              'Add an account',
+              'Add an API key',
               style: Theme.of(context).textTheme.headline6,
             ),
           ),
