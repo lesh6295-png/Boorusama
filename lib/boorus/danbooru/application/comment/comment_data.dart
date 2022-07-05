@@ -1,8 +1,8 @@
 // Package imports:
+import 'package:boorusama/core/domain/accounts/accounts.dart';
 import 'package:equatable/equatable.dart';
 
 // Project imports:
-import 'package:boorusama/boorus/danbooru/domain/accounts/account.dart';
 import 'package:boorusama/boorus/danbooru/domain/comments/comments.dart';
 import 'package:boorusama/boorus/danbooru/domain/users/users.dart';
 

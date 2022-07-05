@@ -62,17 +62,18 @@ class SideBarMenu extends StatelessWidget {
                                         arguments: [state.account!.name]));
                               },
                             ),
-                            ListTile(
-                              leading: const FaIcon(FontAwesomeIcons.ban),
-                              title: const Text('Blacklisted tags'),
-                              onTap: () {
-                                Navigator.of(context).pop();
-                                AppRouter.router.navigateTo(
-                                    context, '/users/blacklisted_tags',
-                                    routeSettings: RouteSettings(
-                                        arguments: [state.userId]));
-                              },
-                            ),
+                            if (state.userId != null)
+                              ListTile(
+                                leading: const FaIcon(FontAwesomeIcons.ban),
+                                title: const Text('Blacklisted tags'),
+                                onTap: () {
+                                  Navigator.of(context).pop();
+                                  AppRouter.router.navigateTo(
+                                      context, '/users/blacklisted_tags',
+                                      routeSettings: RouteSettings(
+                                          arguments: [state.userId]));
+                                },
+                              ),
                           ],
                           ListTile(
                             leading: const Icon(Icons.settings),

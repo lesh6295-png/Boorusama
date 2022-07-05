@@ -1,9 +1,9 @@
 // Package imports:
+import 'package:boorusama/core/domain/accounts/accounts.dart';
 import 'package:dio/dio.dart';
 import 'package:retrofit/dio.dart';
 
 // Project imports:
-import 'package:boorusama/boorus/danbooru/domain/accounts/accounts.dart';
 import 'package:boorusama/boorus/danbooru/domain/users/users.dart';
 import 'package:boorusama/boorus/danbooru/infrastructure/apis/api.dart';
 import 'package:boorusama/core/infrastructure/http_parser.dart';
@@ -24,7 +24,7 @@ class UserRepository implements IUserRepository {
     this.defaultBlacklistedTags,
   );
 
-  final IAccountRepository _accountRepository;
+  final CurrentAccountRepository _accountRepository;
   final Api _api;
   final List<String> defaultBlacklistedTags;
 
@@ -54,10 +54,11 @@ class UserRepository implements IUserRepository {
   @override
   Future<User> getUserById(int id) => _accountRepository
       .get()
+      .then(useAnonymousAccountIfNull)
       .then(
         (account) => _api.getUserById(
-          account.username,
-          account.apiKey,
+          account.name,
+          account.key,
           id,
         ),
       )
@@ -71,10 +72,11 @@ class UserRepository implements IUserRepository {
   Future<void> setUserBlacklistedTags(int id, String blacklistedTags) =>
       _accountRepository
           .get()
+          .then(useAnonymousAccountIfNull)
           .then(
             (account) => _api.setBlacklistedTags(
-              account.username,
-              account.apiKey,
+              account.name,
+              account.key,
               id,
               blacklistedTags,
             ),

@@ -1,9 +1,9 @@
 // Package imports:
+import 'package:boorusama/core/domain/accounts/accounts.dart';
 import 'package:dio/dio.dart';
 import 'package:retrofit/dio.dart';
 
 // Project imports:
-import 'package:boorusama/boorus/danbooru/domain/accounts/accounts.dart';
 import 'package:boorusama/boorus/danbooru/domain/posts/posts.dart';
 import 'package:boorusama/boorus/danbooru/infrastructure/apis/api.dart';
 import 'package:boorusama/core/application/exception.dart';
@@ -17,11 +17,11 @@ List<Post> parsePost(HttpResponse<dynamic> value) => parse(
 class PostRepository implements IPostRepository {
   PostRepository(
     Api api,
-    IAccountRepository accountRepository,
+    CurrentAccountRepository accountRepository,
   )   : _api = api,
         _accountRepository = accountRepository;
 
-  final IAccountRepository _accountRepository;
+  final CurrentAccountRepository _accountRepository;
   final Api _api;
 
   static const int _limit = 60;
@@ -34,10 +34,11 @@ class PostRepository implements IPostRepository {
   ) async =>
       _accountRepository
           .get()
+          .then(useAnonymousAccountIfNull)
           .then(
             (account) => _api.getCuratedPosts(
-              account.username,
-              account.apiKey,
+              account.name,
+              account.key,
               '${date.year}-${date.month}-${date.day}',
               scale.toString().split('.').last,
               page,
@@ -69,10 +70,11 @@ class PostRepository implements IPostRepository {
   ) async =>
       _accountRepository
           .get()
+          .then(useAnonymousAccountIfNull)
           .then(
             (account) => _api.getMostViewedPosts(
-              account.username,
-              account.apiKey,
+              account.name,
+              account.key,
               '${date.year}-${date.month}-${date.day}',
             ),
           )
@@ -103,10 +105,11 @@ class PostRepository implements IPostRepository {
   ) async =>
       _accountRepository
           .get()
+          .then(useAnonymousAccountIfNull)
           .then(
             (account) => _api.getPopularPosts(
-              account.username,
-              account.apiKey,
+              account.name,
+              account.key,
               '${date.year}-${date.month}-${date.day}',
               scale.toString().split('.').last,
               page,
@@ -142,10 +145,11 @@ class PostRepository implements IPostRepository {
   }) =>
       _accountRepository
           .get()
+          .then(useAnonymousAccountIfNull)
           .then(
             (account) => _api.getPosts(
-              account.username,
-              account.apiKey,
+              account.name,
+              account.key,
               page,
               tags,
               limit,

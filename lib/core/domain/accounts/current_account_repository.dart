@@ -8,3 +8,6 @@ abstract class CurrentAccountRepository {
   Future<void> remove();
   Future<void> clear();
 }
+
+Account useAnonymousAccountIfNull(Account? account) =>
+    account ?? AnonymousAccount();

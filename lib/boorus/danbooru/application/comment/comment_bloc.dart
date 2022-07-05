@@ -1,16 +1,16 @@
 // Package imports:
+import 'package:boorusama/core/domain/accounts/accounts.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 
 // Project imports:
 import 'package:boorusama/boorus/danbooru/application/comment/comment.dart';
 import 'package:boorusama/boorus/danbooru/application/common.dart';
-import 'package:boorusama/boorus/danbooru/domain/accounts/accounts.dart';
 import 'package:boorusama/boorus/danbooru/domain/comments/comments.dart';
 
 class CommentBloc extends Bloc<CommentEvent, CommentState> {
   CommentBloc({
     required ICommentRepository commentRepository,
-    required IAccountRepository accountRepository,
+    required CurrentAccountRepository accountRepository,
     required CommentVoteRepository commentVoteRepository,
   }) : super(CommentState.initial()) {
     on<CommentFetched>((event, emit) async {
@@ -29,7 +29,7 @@ class CommentBloc extends Bloc<CommentEvent, CommentState> {
                 .map((e) => commentDataFrom(
                       e,
                       e.creator,
-                      account,
+                      account ?? AnonymousAccount(),
                       votes,
                     ))
                 .toList();

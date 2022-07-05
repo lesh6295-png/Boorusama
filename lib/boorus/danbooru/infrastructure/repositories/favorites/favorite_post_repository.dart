@@ -1,9 +1,9 @@
 // Package imports:
+import 'package:boorusama/core/domain/accounts/accounts.dart';
 import 'package:dio/dio.dart';
 import 'package:retrofit/dio.dart';
 
 // Project imports:
-import 'package:boorusama/boorus/danbooru/domain/accounts/accounts.dart';
 import 'package:boorusama/boorus/danbooru/domain/favorites/favorites.dart';
 import 'package:boorusama/boorus/danbooru/infrastructure/apis/api.dart';
 import 'package:boorusama/core/infrastructure/http_parser.dart';
@@ -20,15 +20,16 @@ class FavoritePostRepository implements IFavoritePostRepository {
   );
 
   final Api _api;
-  final IAccountRepository _accountRepository;
+  final CurrentAccountRepository _accountRepository;
 
   @override
   Future<bool> addToFavorites(int postId) => _accountRepository
           .get()
+          .then(useAnonymousAccountIfNull)
           .then(
             (account) => _api.addToFavorites(
-              account.username,
-              account.apiKey,
+              account.name,
+              account.key,
               postId,
             ),
           )
@@ -53,11 +54,12 @@ class FavoritePostRepository implements IFavoritePostRepository {
   Future<bool> removeFromFavorites(int postId) async {
     return _accountRepository
         .get()
+        .then(useAnonymousAccountIfNull)
         .then(
           (account) => _api.removeFromFavorites(
             postId,
-            account.username,
-            account.apiKey,
+            account.name,
+            account.key,
             'delete',
           ),
         )
@@ -87,10 +89,11 @@ class FavoritePostRepository implements IFavoritePostRepository {
   ) =>
       _accountRepository
           .get()
+          .then(useAnonymousAccountIfNull)
           .then(
             (account) => _api.filterFavoritesFromUserId(
-              account.username,
-              account.apiKey,
+              account.name,
+              account.key,
               postIds.join(','),
               userId,
               limit,
@@ -106,10 +109,11 @@ class FavoritePostRepository implements IFavoritePostRepository {
   ) =>
       _accountRepository
           .get()
+          .then(useAnonymousAccountIfNull)
           .then(
             (account) => _api.filterFavoritesFromUserId(
-              account.username,
-              account.apiKey,
+              account.name,
+              account.key,
               postId.toString(),
               userId,
               20,

@@ -1,9 +1,9 @@
 // Package imports:
+import 'package:boorusama/core/domain/accounts/accounts.dart';
 import 'package:dio/dio.dart';
 import 'package:retrofit/dio.dart';
 
 // Project imports:
-import 'package:boorusama/boorus/danbooru/domain/accounts/accounts.dart';
 import 'package:boorusama/boorus/danbooru/domain/comments/comments.dart';
 import 'package:boorusama/boorus/danbooru/infrastructure/apis/api.dart';
 import 'package:boorusama/core/infrastructure/http_parser.dart';
@@ -16,12 +16,12 @@ List<Comment> parseComment(HttpResponse<dynamic> value) => parse(
 class CommentRepository implements ICommentRepository {
   CommentRepository(
     Api api,
-    IAccountRepository accountRepository,
+    CurrentAccountRepository accountRepository,
   )   : _api = api,
         _accountRepository = accountRepository;
 
   final Api _api;
-  final IAccountRepository _accountRepository;
+  final CurrentAccountRepository _accountRepository;
 
   @override
   Future<List<Comment>> getCommentsFromPostId(
@@ -44,9 +44,10 @@ class CommentRepository implements ICommentRepository {
   @override
   Future<bool> postComment(int postId, String content) => _accountRepository
       .get()
+      .then(useAnonymousAccountIfNull)
       .then((account) => _api.postComment(
-            account.username,
-            account.apiKey,
+            account.name,
+            account.key,
             postId,
             content,
             true,
@@ -58,9 +59,10 @@ class CommentRepository implements ICommentRepository {
   Future<bool> updateComment(int commentId, String content) =>
       _accountRepository
           .get()
+          .then(useAnonymousAccountIfNull)
           .then((account) => _api.updateComment(
-                account.username,
-                account.apiKey,
+                account.name,
+                account.key,
                 commentId,
                 content,
               ))
@@ -70,9 +72,10 @@ class CommentRepository implements ICommentRepository {
   @override
   Future<bool> deleteComment(int commentId) => _accountRepository
       .get()
+      .then(useAnonymousAccountIfNull)
       .then((account) => _api.deleteComment(
-            account.username,
-            account.apiKey,
+            account.name,
+            account.key,
             commentId,
           ))
       .then((_) => true)

@@ -1,9 +1,9 @@
 // Package imports:
+import 'package:boorusama/core/domain/accounts/accounts.dart';
 import 'package:dio/dio.dart';
 import 'package:retrofit/dio.dart';
 
 // Project imports:
-import 'package:boorusama/boorus/danbooru/domain/accounts/accounts.dart';
 import 'package:boorusama/boorus/danbooru/domain/tags/tags.dart';
 import 'package:boorusama/boorus/danbooru/infrastructure/apis/api.dart';
 import 'package:boorusama/core/infrastructure/http_parser.dart';
@@ -20,16 +20,17 @@ class TagRepository implements ITagRepository {
   );
 
   final Api _api;
-  final IAccountRepository _accountRepository;
+  final CurrentAccountRepository _accountRepository;
 
   @override
   Future<List<Tag>> getTagsByNamePattern(String stringPattern, int page) =>
       _accountRepository
           .get()
+          .then(useAnonymousAccountIfNull)
           .then(
             (account) => _api.getTagsByNamePattern(
-              account.username,
-              account.apiKey,
+              account.name,
+              account.key,
               page,
               'yes',
               '$stringPattern*',
@@ -50,9 +51,10 @@ class TagRepository implements ITagRepository {
     try {
       return _accountRepository
           .get()
+          .then(useAnonymousAccountIfNull)
           .then((account) => _api.getTagsByNameComma(
-                account.username,
-                account.apiKey,
+                account.name,
+                account.key,
                 page,
                 'yes',
                 stringComma,

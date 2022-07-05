@@ -18,6 +18,24 @@ class Account extends Equatable {
     required this.updatedAt,
   });
 
+  factory Account.fromJson(Map<String, dynamic> json) => Account(
+        id: json['id'],
+        name: json['name'],
+        key: json['key'],
+        booruType: BooruType.values[json['booruType']],
+        createdAt: DateTime.parse(json['createdAt']),
+        updatedAt: DateTime.parse(json['updatedAt']),
+      );
+
+  Map<String, dynamic> toJson() => {
+        'id': id,
+        'name': name,
+        'key': key,
+        'booruType': booruType.index,
+        'createdAt': createdAt.toIso8601String(),
+        'updatedAt': updatedAt.toIso8601String(),
+      };
+
   final AccountId id;
   final AccountName name;
   final AccountKey key;

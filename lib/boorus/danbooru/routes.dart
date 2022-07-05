@@ -2,6 +2,7 @@
 import 'dart:collection';
 
 // Flutter imports:
+import 'package:boorusama/core/domain/accounts/accounts.dart';
 import 'package:flutter/material.dart';
 
 // Package imports:
@@ -24,7 +25,6 @@ import 'package:boorusama/boorus/danbooru/application/search_history/search_hist
 import 'package:boorusama/boorus/danbooru/application/tag/tag.dart';
 import 'package:boorusama/boorus/danbooru/application/theme/theme.dart';
 import 'package:boorusama/boorus/danbooru/application/user/user.dart';
-import 'package:boorusama/boorus/danbooru/domain/accounts/accounts.dart';
 import 'package:boorusama/boorus/danbooru/domain/artists/artists.dart';
 import 'package:boorusama/boorus/danbooru/domain/favorites/i_favorite_post_repository.dart';
 import 'package:boorusama/boorus/danbooru/domain/pools/pool.dart';
@@ -102,7 +102,7 @@ final postDetailHandler = Handler(handlerFunc: (
       BlocProvider(create: (context) => SliverPostGridBloc()),
       BlocProvider(
         create: (context) => IsPostFavoritedBloc(
-          accountRepository: context.read<IAccountRepository>(),
+          accountRepository: context.read<CurrentAccountRepository>(),
           favoritePostRepository: context.read<IFavoritePostRepository>(),
         )..add(IsPostFavoritedRequested(postId: posts[index].id)),
       ),

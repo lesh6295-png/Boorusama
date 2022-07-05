@@ -1,8 +1,8 @@
 // Package imports:
+import 'package:boorusama/core/domain/accounts/accounts.dart';
 import 'package:retrofit/dio.dart';
 
 // Project imports:
-import 'package:boorusama/boorus/danbooru/domain/accounts/accounts.dart';
 import 'package:boorusama/boorus/danbooru/domain/pools/pools.dart';
 import 'package:boorusama/boorus/danbooru/infrastructure/apis/api.dart';
 import 'package:boorusama/core/infrastructure/http_parser.dart';
@@ -19,7 +19,7 @@ class PoolRepository {
   );
 
   final Api _api;
-  final IAccountRepository _accountRepository;
+  final CurrentAccountRepository _accountRepository;
   final _limit = 20;
 
   Future<List<Pool>> getPools(
@@ -29,24 +29,29 @@ class PoolRepository {
     String? name,
     String? description,
   }) =>
-      _accountRepository.get().then((account) => _api
-          .getPools(
-            account.username,
-            account.apiKey,
-            page,
-            _limit,
-            category: category?.toString(),
-            order: order?.key,
-            name: name,
-            description: description,
-          )
-          .then(parsePool));
+      _accountRepository
+          .get()
+          .then(useAnonymousAccountIfNull)
+          .then((account) => _api
+              .getPools(
+                account.name,
+                account.key,
+                page,
+                _limit,
+                category: category?.toString(),
+                order: order?.key,
+                name: name,
+                description: description,
+              )
+              .then(parsePool));
 
-  Future<List<Pool>> getPoolsByPostId(int postId) =>
-      _accountRepository.get().then((account) => _api
+  Future<List<Pool>> getPoolsByPostId(int postId) => _accountRepository
+      .get()
+      .then(useAnonymousAccountIfNull)
+      .then((account) => _api
           .getPoolsFromPostId(
-            account.username,
-            account.apiKey,
+            account.name,
+            account.key,
             postId,
             _limit,
           )

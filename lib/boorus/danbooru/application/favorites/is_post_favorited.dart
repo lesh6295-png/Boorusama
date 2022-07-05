@@ -1,4 +1,5 @@
 // Flutter imports:
+import 'package:boorusama/core/domain/accounts/accounts.dart';
 import 'package:flutter/foundation.dart';
 
 // Package imports:
@@ -7,7 +8,6 @@ import 'package:flutter_bloc/flutter_bloc.dart';
 
 // Project imports:
 import 'package:boorusama/boorus/danbooru/application/common.dart';
-import 'package:boorusama/boorus/danbooru/domain/accounts/accounts.dart';
 import 'package:boorusama/boorus/danbooru/domain/favorites/i_favorite_post_repository.dart';
 import 'package:boorusama/common/bloc_stream_transformer.dart';
 
@@ -28,16 +28,20 @@ class IsPostFavoritedRequested extends IsPostFavoritedEvent {
 class IsPostFavoritedBloc
     extends Bloc<IsPostFavoritedEvent, AsyncLoadState<bool>> {
   IsPostFavoritedBloc({
-    required IAccountRepository accountRepository,
+    required CurrentAccountRepository accountRepository,
     required IFavoritePostRepository favoritePostRepository,
   }) : super(const AsyncLoadState.initial()) {
     on<IsPostFavoritedRequested>(
       (event, emit) async {
+        final account = await accountRepository.get();
+        if (account == null) return;
+
         await tryAsync<bool>(
           action: () async {
-            final account = await accountRepository.get();
             final isFaved = favoritePostRepository.checkIfFavoritedByUser(
-                account.id, event.postId);
+              account.id,
+              event.postId,
+            );
 
             return isFaved;
           },

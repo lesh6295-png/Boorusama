@@ -1,8 +1,8 @@
 // Package imports:
+import 'package:boorusama/core/domain/accounts/accounts.dart';
 import 'package:retrofit/dio.dart';
 
 // Project imports:
-import 'package:boorusama/boorus/danbooru/domain/accounts/accounts.dart';
 import 'package:boorusama/boorus/danbooru/domain/autocomplete/autocomplete.dart';
 import 'package:boorusama/boorus/danbooru/domain/autocomplete/autocomplete_dto.dart';
 import 'package:boorusama/boorus/danbooru/domain/tags/tag_category.dart' as t;
@@ -73,21 +73,26 @@ List<AutocompleteData> mapDtoToAutocomplete(List<AutocompleteDto> dtos) => dtos
 class AutocompleteRepository {
   const AutocompleteRepository({
     required Api api,
-    required IAccountRepository accountRepository,
+    required CurrentAccountRepository accountRepository,
   })  : _accountRepository = accountRepository,
         _api = api;
 
   final Api _api;
-  final IAccountRepository _accountRepository;
+  final CurrentAccountRepository _accountRepository;
 
-  Future<List<AutocompleteData>>
-      getAutocomplete(String query) =>
-          _accountRepository
-              .get()
-              .then((account) => _api.autocomplete(
-                  account.username, account.apiKey, query, 'tag_query', 10))
-              .then(parseAutocomplete)
-              .then(mapDtoToAutocomplete)
-              .catchError((Object e) =>
-                  throw Exception('Failed to get autocomplete for $query'));
+  Future<List<AutocompleteData>> getAutocomplete(String query) =>
+      _accountRepository
+          .get()
+          .then(useAnonymousAccountIfNull)
+          .then((account) => _api.autocomplete(
+                account.name,
+                account.key,
+                query,
+                'tag_query',
+                10,
+              ))
+          .then(parseAutocomplete)
+          .then(mapDtoToAutocomplete)
+          .catchError((Object e) =>
+              throw Exception('Failed to get autocomplete for $query'));
 }

@@ -1,9 +1,9 @@
 // Package imports:
+import 'package:boorusama/core/domain/accounts/accounts.dart';
 import 'package:dio/dio.dart';
 import 'package:retrofit/dio.dart';
 
 // Project imports:
-import 'package:boorusama/boorus/danbooru/domain/accounts/accounts.dart';
 import 'package:boorusama/boorus/danbooru/domain/tags/tags.dart';
 import 'package:boorusama/boorus/danbooru/infrastructure/apis/api.dart';
 import 'package:boorusama/core/infrastructure/http_parser.dart';
@@ -18,12 +18,12 @@ List<Search> parseSearch(HttpResponse<dynamic> value) => parse(
 
 class PopularSearchRepository implements IPopularSearchRepository {
   PopularSearchRepository({
-    required IAccountRepository accountRepository,
+    required CurrentAccountRepository accountRepository,
     required Api api,
   })  : _accountRepository = accountRepository,
         _api = api;
 
-  final IAccountRepository _accountRepository;
+  final CurrentAccountRepository _accountRepository;
   final Api _api;
 
   @override
@@ -31,10 +31,11 @@ class PopularSearchRepository implements IPopularSearchRepository {
     try {
       return _accountRepository
           .get()
+          .then(useAnonymousAccountIfNull)
           .then(
             (account) => _api.getPopularSearchByDate(
-              account.username,
-              account.apiKey,
+              account.name,
+              account.key,
               '${date.year}-${date.month}-${date.day}',
             ),
           )

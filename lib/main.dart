@@ -1,4 +1,5 @@
 // Flutter imports:
+import 'package:boorusama/core/domain/accounts/accounts.dart';
 import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 
@@ -26,7 +27,6 @@ import 'package:boorusama/boorus/danbooru/application/post/post.dart';
 import 'package:boorusama/boorus/danbooru/application/profile/profile.dart';
 import 'package:boorusama/boorus/danbooru/application/settings/settings.dart';
 import 'package:boorusama/boorus/danbooru/application/theme/theme.dart';
-import 'package:boorusama/boorus/danbooru/domain/accounts/accounts.dart';
 import 'package:boorusama/boorus/danbooru/domain/artists/artists.dart';
 import 'package:boorusama/boorus/danbooru/domain/download/post_file_name_generator.dart';
 import 'package:boorusama/boorus/danbooru/domain/favorites/i_favorite_post_repository.dart';
@@ -84,11 +84,10 @@ void main() async {
 
   final settings = await settingRepository.load();
 
-  final accountBox = Hive.openBox('accounts');
-  final accountRepo = AccountRepository(accountBox);
-
-  final accountRepo2 = AccountRepositoryImpl();
-
+  const accountDbName = 'accounts-v2';
+  final accountBox = await Hive.openBox<String>(accountDbName);
+  final accountRepo =
+      AccountRepositoryImpl(db: accountBox, dbName: accountDbName);
   final searchHistoryRepo =
       SearchHistoryRepository(settingRepository: settingRepository);
 
@@ -158,50 +157,52 @@ void main() async {
                 builder: (context, state) {
                   final api = state.api;
 
-                  final popularSearchRepo = PopularSearchRepository(
-                      accountRepository: accountRepo, api: api);
+                  final currentAccountRepo =
+                      CurrentAccountRepositoryImpl(type: state.booru.booruType);
 
-                  final tagRepo = TagRepository(api, accountRepo);
+                  final popularSearchRepo = PopularSearchRepository(
+                      accountRepository: currentAccountRepo, api: api);
+
+                  final tagRepo = TagRepository(api, currentAccountRepo);
 
                   final artistRepo = ArtistRepository(api: api);
 
                   final profileRepo = ProfileRepository(
-                      accountRepository: accountRepo, api: api);
+                      accountRepository: currentAccountRepo, api: api);
 
-                  final postRepo = PostRepository(api, accountRepo);
+                  final postRepo = PostRepository(api, currentAccountRepo);
 
-                  final commentRepo = CommentRepository(api, accountRepo);
+                  final commentRepo =
+                      CommentRepository(api, currentAccountRepo);
 
                   final userRepo = UserRepository(
-                      api, accountRepo, tagInfo.defaultBlacklistedTags);
+                      api, currentAccountRepo, tagInfo.defaultBlacklistedTags);
 
                   final nopeRepo = NoteRepository(api);
 
-                  final favoriteRepo = FavoritePostRepository(api, accountRepo);
+                  final favoriteRepo =
+                      FavoritePostRepository(api, currentAccountRepo);
 
                   final artistCommentaryRepo =
-                      ArtistCommentaryRepository(api, accountRepo);
+                      ArtistCommentaryRepository(api, currentAccountRepo);
 
-                  final poolRepo = PoolRepository(api, accountRepo);
+                  final poolRepo = PoolRepository(api, currentAccountRepo);
 
                   final blacklistedTagRepo =
-                      BlacklistedTagsRepository(userRepo, accountRepo);
+                      BlacklistedTagsRepository(userRepo, currentAccountRepo);
 
                   final autocompleteRepo = AutocompleteCacheRepository(
                     cacher: LruCacher<String, List<AutocompleteData>>(
                       capacity: 100,
                     ),
                     repo: AutocompleteRepository(
-                        api: api, accountRepository: accountRepo),
+                        api: api, accountRepository: currentAccountRepo),
                   );
 
                   final relatedTagRepo = RelatedTagApiRepository(api);
 
                   final commentVoteRepo =
-                      CommentVoteApiRepository(api, accountRepo);
-
-                  final currentAccountRepo =
-                      CurrentAccountRepositoryImpl(type: state.booru.booruType);
+                      CommentVoteApiRepository(api, currentAccountRepo);
 
                   final favoritedCubit =
                       FavoritesCubit(postRepository: postRepo);
@@ -212,7 +213,7 @@ void main() async {
                   final commentBloc = CommentBloc(
                     commentVoteRepository: commentVoteRepo,
                     commentRepository: commentRepo,
-                    accountRepository: accountRepo,
+                    accountRepository: currentAccountRepo,
                   );
                   final artistCommentaryCubit = ArtistCommentaryCubit(
                       artistCommentaryRepository: artistCommentaryRepo);
@@ -231,7 +232,7 @@ void main() async {
                   )..add(const PostRefreshed());
 
                   final accountBloc = AccountBloc(
-                    accountRepository: accountRepo2,
+                    accountRepository: accountRepo,
                     booru: state.booru,
                   )..add(const AccountRequested());
 
@@ -247,8 +248,8 @@ void main() async {
                           value: profileRepo),
                       RepositoryProvider<IFavoritePostRepository>.value(
                           value: favoriteRepo),
-                      RepositoryProvider<IAccountRepository>.value(
-                          value: accountRepo),
+                      RepositoryProvider<CurrentAccountRepository>.value(
+                          value: currentAccountRepo),
                       RepositoryProvider<IDownloadService>.value(
                           value: downloader),
                       RepositoryProvider<ISettingRepository>.value(
@@ -390,14 +391,14 @@ Future<PackageInfo> getPackageInfo() => PackageInfo.fromPlatform();
 class BlacklistedTagsRepository {
   BlacklistedTagsRepository(this.userRepository, this.accountRepository);
   final IUserRepository userRepository;
-  final IAccountRepository accountRepository;
+  final CurrentAccountRepository accountRepository;
   List<String>? _tags;
 
   Future<List<String>> getBlacklistedTags() async {
     // ignore: prefer_conditional_assignment
     if (_tags == null) {
       final account = await accountRepository.get();
-      if (account == Account.empty) {
+      if (account == null) {
         return [];
       }
       _tags ??= await userRepository
