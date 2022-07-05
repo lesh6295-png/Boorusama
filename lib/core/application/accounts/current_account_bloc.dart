@@ -3,7 +3,6 @@ import 'package:equatable/equatable.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 
 // Project imports:
-import 'package:boorusama/boorus/booru.dart';
 import 'package:boorusama/boorus/danbooru/application/common.dart';
 import 'package:boorusama/boorus/danbooru/domain/profile/i_profile_repository.dart';
 import 'package:boorusama/core/domain/accounts/accounts.dart';
@@ -69,11 +68,10 @@ class CurrentAccountBloc
   CurrentAccountBloc({
     required CurrentAccountRepository currentAccountRepository,
     required IProfileRepository profileRepository,
-    required Booru currentBooru,
   }) : super(CurrentAccountState.initial()) {
     on<CurrentAccountFetched>((event, emit) async {
       await tryAsync<Account?>(
-        action: () => currentAccountRepository.get(currentBooru.booruType),
+        action: () => currentAccountRepository.get(),
         // onLoading: () => emit(loading),
         onFailure: (error, stackTrace) => emit(state.copyWith()),
         onSuccess: (data) async {
@@ -95,8 +93,7 @@ class CurrentAccountBloc
 
     on<CurrentAccountChanged>((event, emit) async {
       await tryAsync<void>(
-        action: () =>
-            currentAccountRepository.set(event.account, currentBooru.booruType),
+        action: () => currentAccountRepository.set(event.account),
         // onLoading: () => emit(loading),
         // onFailure: (error, stackTrace) => emit(error),
         onSuccess: (_) async {
@@ -114,7 +111,7 @@ class CurrentAccountBloc
 
     on<CurrentAccountCleared>((event, emit) async {
       await tryAsync<void>(
-        action: () => currentAccountRepository.clear(currentBooru.booruType),
+        action: () => currentAccountRepository.clear(),
         // onLoading: () => emit(loading),
         // onFailure: (error, stackTrace) => emit(error),
         onSuccess: (_) async {

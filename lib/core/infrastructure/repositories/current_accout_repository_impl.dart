@@ -3,11 +3,16 @@ import 'package:boorusama/boorus/booru.dart';
 import 'package:boorusama/core/domain/accounts/accounts.dart';
 
 class CurrentAccountRepositoryImpl implements CurrentAccountRepository {
+  CurrentAccountRepositoryImpl({
+    required this.type,
+  });
+
   final db = <BooruType, Account>{};
+  final BooruType type;
 
   @override
-  Future<Account?> get(BooruType booruType) async {
-    return db[booruType];
+  Future<Account?> get() async {
+    return db[type];
   }
 
   @override
@@ -16,17 +21,17 @@ class CurrentAccountRepositoryImpl implements CurrentAccountRepository {
   }
 
   @override
-  Future<void> remove(BooruType type) async {
+  Future<void> remove() async {
     db.remove(type);
   }
 
   @override
-  Future<void> set(Account account, BooruType type) async {
+  Future<void> set(Account account) async {
     db[type] = account;
   }
 
   @override
-  Future<void> clear(BooruType type) async {
+  Future<void> clear() async {
     db.removeWhere((key, value) => key == type);
   }
 }

@@ -200,7 +200,8 @@ void main() async {
                   final commentVoteRepo =
                       CommentVoteApiRepository(api, accountRepo);
 
-                  final currentAccountRepo = CurrentAccountRepositoryImpl();
+                  final currentAccountRepo =
+                      CurrentAccountRepositoryImpl(type: state.booru.booruType);
 
                   final favoritedCubit =
                       FavoritesCubit(postRepository: postRepo);
@@ -237,7 +238,6 @@ void main() async {
                   final currentAccountBloc = CurrentAccountBloc(
                     profileRepository: profileRepo,
                     currentAccountRepository: currentAccountRepo,
-                    currentBooru: state.booru,
                   )..add(const CurrentAccountFetched());
 
                   return MultiRepositoryProvider(
