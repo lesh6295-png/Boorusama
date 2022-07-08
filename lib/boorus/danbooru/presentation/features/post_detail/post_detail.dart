@@ -253,6 +253,7 @@ class PostDetail extends HookWidget {
                     postRepository: context.read<IPostRepository>(),
                     blacklistedTagsRepository:
                         context.read<BlacklistedTagsRepository>(),
+                    store: PostStore(totalPage: 3),
                   )..add(PostRefreshed(
                       tag: post.hasParent
                           ? 'parent:${post.parentId}'

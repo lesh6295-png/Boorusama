@@ -13,7 +13,7 @@ import 'package:boorusama/boorus/danbooru/presentation/shared/shared.dart';
 import 'package:boorusama/boorus/danbooru/router.dart';
 import 'package:boorusama/core/core.dart';
 
-class HomePostGrid extends StatelessWidget {
+class HomePostGrid extends StatefulWidget {
   const HomePostGrid({
     Key? key,
     required this.controller,
@@ -24,6 +24,13 @@ class HomePostGrid extends StatelessWidget {
   final VoidCallback? onTap;
 
   @override
+  State<HomePostGrid> createState() => _HomePostGridState();
+}
+
+class _HomePostGridState extends State<HomePostGrid> {
+  final scrollOffset = ValueNotifier<double>(0);
+
+  @override
   Widget build(BuildContext context) {
     return SliverPadding(
       padding: const EdgeInsets.symmetric(
@@ -32,7 +39,13 @@ class HomePostGrid extends StatelessWidget {
       sliver: BlocSelector<SettingsCubit, SettingsState, GridSize>(
         selector: (state) => state.settings.gridSize,
         builder: (context, gridSize) {
-          return BlocBuilder<PostBloc, PostState>(
+          return BlocConsumer<PostBloc, PostState>(
+            listenWhen: (previous, current) =>
+                previous.posts.length == current.posts.length &&
+                current.status == LoadStatus.success,
+            listener: (context, state) {
+              widget.controller.jumpTo(scrollOffset.value);
+            },
             buildWhen: (previous, current) =>
                 current.status != LoadStatus.loading,
             builder: (context, state) {
@@ -43,13 +56,14 @@ class HomePostGrid extends StatelessWidget {
                   return const SliverToBoxAdapter(
                       child: Center(child: Text('No data')));
                 }
+                scrollOffset.value = widget.controller.offset;
                 return SliverPostGrid(
                   posts: state.posts,
-                  scrollController: controller,
+                  scrollController: widget.controller,
                   gridSize: gridSize,
                   borderRadius: _gridSizeToBorderRadius(gridSize),
                   onTap: (post, index) {
-                    onTap?.call();
+                    widget.onTap?.call();
                     AppRouter.router.navigateTo(
                       context,
                       '/post/detail',
@@ -57,7 +71,7 @@ class HomePostGrid extends StatelessWidget {
                         arguments: [
                           state.posts,
                           index,
-                          controller,
+                          widget.controller,
                         ],
                       ),
                     );

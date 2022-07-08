@@ -1,4 +1,5 @@
 // Flutter imports:
+import 'package:flutter/cupertino.dart';
 import 'package:flutter/material.dart' hide ThemeMode;
 
 // Package imports:
@@ -284,55 +285,60 @@ class _SearchPageState extends State<SearchPage> {
                     Future.delayed(const Duration(milliseconds: 500),
                         () => controller.refreshCompleted());
                   },
-                  builder: (context, controller) => CustomScrollView(
+                  builder: (context, controller) => PrimaryScrollController(
                     controller: controller,
-                    slivers: <Widget>[
-                      SliverToBoxAdapter(
-                        child: BlocBuilder<RelatedTagBloc,
-                            AsyncLoadState<RelatedTag>>(
-                          builder: (context, state) {
-                            if (state.status == LoadStatus.success) {
-                              return BlocSelector<ThemeBloc, ThemeState,
-                                  ThemeMode>(
-                                selector: (state) => state.theme,
-                                builder: (context, theme) {
-                                  return _buildRelatedTags(
-                                    state.data!,
-                                    theme,
-                                  );
-                                },
-                              );
-                            } else if (state.status == LoadStatus.failure) {
-                              return const SizedBox.shrink();
-                            } else {
-                              return const TagChipsPlaceholder();
-                            }
-                          },
-                        ),
-                      ),
-                      HomePostGrid(
+                    child: CupertinoScrollbar(
+                      child: CustomScrollView(
                         controller: controller,
-                        onTap: () => FocusScope.of(context).unfocus(),
+                        slivers: <Widget>[
+                          SliverToBoxAdapter(
+                            child: BlocBuilder<RelatedTagBloc,
+                                AsyncLoadState<RelatedTag>>(
+                              builder: (context, state) {
+                                if (state.status == LoadStatus.success) {
+                                  return BlocSelector<ThemeBloc, ThemeState,
+                                      ThemeMode>(
+                                    selector: (state) => state.theme,
+                                    builder: (context, theme) {
+                                      return _buildRelatedTags(
+                                        state.data!,
+                                        theme,
+                                      );
+                                    },
+                                  );
+                                } else if (state.status == LoadStatus.failure) {
+                                  return const SizedBox.shrink();
+                                } else {
+                                  return const TagChipsPlaceholder();
+                                }
+                              },
+                            ),
+                          ),
+                          HomePostGrid(
+                            controller: controller,
+                            onTap: () => FocusScope.of(context).unfocus(),
+                          ),
+                          BlocBuilder<PostBloc, PostState>(
+                            builder: (context, state) {
+                              if (state.status == LoadStatus.loading) {
+                                return const SliverPadding(
+                                  padding: EdgeInsets.only(bottom: 20, top: 20),
+                                  sliver: SliverToBoxAdapter(
+                                    child: Center(
+                                      child: CircularProgressIndicator(),
+                                    ),
+                                  ),
+                                );
+                              } else {
+                                return const SliverToBoxAdapter(
+                                  child: SizedBox.shrink(),
+                                );
+                              }
+                            },
+                          ),
+                        ],
                       ),
-                      BlocBuilder<PostBloc, PostState>(
-                        builder: (context, state) {
-                          if (state.status == LoadStatus.loading) {
-                            return const SliverPadding(
-                              padding: EdgeInsets.only(bottom: 20, top: 20),
-                              sliver: SliverToBoxAdapter(
-                                child: Center(
-                                  child: CircularProgressIndicator(),
-                                ),
-                              ),
-                            );
-                          } else {
-                            return const SliverToBoxAdapter(
-                              child: SizedBox.shrink(),
-                            );
-                          }
-                        },
-                      ),
-                    ],
+                    ),
                   ),
                 );
               },

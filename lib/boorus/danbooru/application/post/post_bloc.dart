@@ -1,3 +1,6 @@
+// Dart imports:
+import 'dart:collection';
+
 // Flutter imports:
 import 'package:flutter/foundation.dart';
 
@@ -14,9 +17,54 @@ import 'package:boorusama/core/application/exception.dart';
 import 'package:boorusama/main.dart';
 import 'common.dart';
 
+class PostQueueItem {
+  const PostQueueItem({
+    required this.page,
+    required this.posts,
+  });
+
+  final int page;
+  final List<Post> posts;
+}
+
+class PostStore {
+  PostStore({
+    required this.totalPage,
+  });
+  final int totalPage;
+  final Queue<PostQueueItem> _posts = Queue();
+
+  List<Post> get() {
+    return _posts.toList().expand((e) => e.posts).toList();
+  }
+
+  void addLast(int page, List<Post> posts) {
+    if (_posts.length == totalPage) {
+      _posts.removeFirst();
+    }
+    _posts.addLast(PostQueueItem(page: page, posts: posts));
+  }
+
+  void addFirst(int page, List<Post> posts) {
+    if (_posts.length == totalPage) {
+      _posts.removeLast();
+    }
+    _posts.addFirst(PostQueueItem(page: page, posts: posts));
+  }
+
+  void clear() {
+    _posts.clear();
+  }
+}
+
 enum PostsOrder {
   popular,
   newest,
+}
+
+enum PostFetchDirection {
+  up,
+  down,
 }
 
 @immutable
@@ -76,12 +124,14 @@ class PostFetched extends PostEvent {
   const PostFetched({
     required this.tags,
     this.order,
+    this.direction = PostFetchDirection.down,
   }) : super();
   final String tags;
   final PostsOrder? order;
+  final PostFetchDirection direction;
 
   @override
-  List<Object?> get props => [tags, order];
+  List<Object?> get props => [tags, order, direction];
 }
 
 class PostRefreshed extends PostEvent {
@@ -101,14 +151,20 @@ class PostBloc extends Bloc<PostEvent, PostState> {
   PostBloc({
     required IPostRepository postRepository,
     required BlacklistedTagsRepository blacklistedTagsRepository,
+    required PostStore store,
   }) : super(PostState.initial()) {
     on<PostFetched>(
       (event, emit) async {
         final blacklisted =
             await blacklistedTagsRepository.getBlacklistedTags();
         final query = '${event.tags} ${_postsOrderToString(event.order)}';
+
+        final page = event.direction == PostFetchDirection.down
+            ? state.page + 1
+            : state.page - 1;
+
         await tryAsync<List<Post>>(
-          action: () => postRepository.getPosts(query, state.page + 1),
+          action: () => postRepository.getPosts(query, page),
           onLoading: () => emit(state.copyWith(status: LoadStatus.loading)),
           onFailure: (stackTrace, error) {
             if (error is CannotSearchMoreThanTwoTags) {
@@ -125,21 +181,26 @@ class PostBloc extends Bloc<PostEvent, PostState> {
             }
           },
           onSuccess: (posts) async {
-            final filteredPosts = filterBlacklisted(posts, blacklisted);
+            // final filteredPosts = filterBlacklisted(posts, blacklisted);
+            if (event.direction == PostFetchDirection.down) {
+              store.addLast(page, posts);
+            } else {
+              store.addFirst(page, posts);
+            }
             // print(
             //     '${filteredPosts.length} posts got filtered. Total: ${state.filteredPosts.length + filteredPosts.length}');
             emit(
               state.copyWith(
                 status: LoadStatus.success,
                 posts: [
-                  ...state.posts,
-                  ...filter(posts, blacklisted),
+                  // ...state.posts,
+                  ...filter(store.get(), blacklisted),
                 ],
-                filteredPosts: [
-                  ...state.filteredPosts,
-                  ...filteredPosts,
-                ],
-                page: state.page + 1,
+                // filteredPosts: [
+                //   ...state.filteredPosts,
+                //   ...filteredPosts,
+                // ],
+                page: page,
                 hasMore: posts.isNotEmpty,
               ),
             );
@@ -172,15 +233,20 @@ class PostBloc extends Bloc<PostEvent, PostState> {
               ));
             }
           },
-          onSuccess: (posts) async => emit(
-            state.copyWith(
-              status: LoadStatus.success,
-              posts: filter(posts, blacklisted),
-              filteredPosts: filterBlacklisted(posts, blacklisted),
-              page: 1,
-              hasMore: posts.isNotEmpty,
-            ),
-          ),
+          onSuccess: (posts) async {
+            store
+              ..clear()
+              ..addFirst(1, posts);
+            emit(
+              state.copyWith(
+                status: LoadStatus.success,
+                posts: filter(store.get(), blacklisted),
+                filteredPosts: filterBlacklisted(store.get(), blacklisted),
+                page: 1,
+                hasMore: posts.isNotEmpty,
+              ),
+            );
+          },
         );
       },
       transformer: restartable(),

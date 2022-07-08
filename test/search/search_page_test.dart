@@ -110,6 +110,7 @@ void main() {
   PostBloc createPostBloc() => PostBloc(
         postRepository: mockPostRepository,
         blacklistedTagsRepository: mockBlacklistedTagRepository,
+        store: PostStore(totalPage: 3),
       );
 
   setUpAll(() {

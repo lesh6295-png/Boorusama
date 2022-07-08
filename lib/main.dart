@@ -228,6 +228,7 @@ void main() async {
                   final postBloc = PostBloc(
                     postRepository: postRepo,
                     blacklistedTagsRepository: blacklistedTagRepo,
+                    store: PostStore(totalPage: 3),
                   )..add(const PostRefreshed());
 
                   return MultiRepositoryProvider(

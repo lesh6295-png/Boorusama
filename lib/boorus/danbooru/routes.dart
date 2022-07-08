@@ -71,6 +71,7 @@ final artistHandler = Handler(handlerFunc: (
                 postRepository: RepositoryProvider.of<IPostRepository>(context),
                 blacklistedTagsRepository:
                     context.read<BlacklistedTagsRepository>(),
+                store: PostStore(totalPage: 3),
               )..add(PostRefreshed(tag: args[0]))),
       BlocProvider(
           create: (context) =>
@@ -174,6 +175,7 @@ final postSearchHandler = Handler(handlerFunc: (
                 postRepository: context.read<IPostRepository>(),
                 blacklistedTagsRepository:
                     context.read<BlacklistedTagsRepository>(),
+                store: PostStore(totalPage: 3),
               )),
       BlocProvider.value(value: BlocProvider.of<ThemeBloc>(context)),
       BlocProvider(
@@ -289,6 +291,7 @@ final favoritesHandler =
                         RepositoryProvider.of<IPostRepository>(context),
                     blacklistedTagsRepository:
                         context.read<BlacklistedTagsRepository>(),
+                    store: PostStore(totalPage: 3),
                   )..add(PostRefreshed(tag: 'ordfav:$username'))),
         ],
         child: FavoritesPage(
