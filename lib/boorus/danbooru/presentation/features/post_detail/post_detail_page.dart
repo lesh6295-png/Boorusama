@@ -21,6 +21,7 @@ import 'package:boorusama/core/presentation/widgets/animated_spinning_icon.dart'
 import 'package:boorusama/core/presentation/widgets/shadow_gradient_overlay.dart';
 import 'models/slide_show_configuration.dart';
 import 'post_image_page.dart';
+import 'widgets/post_video.dart';
 
 double getTopActionIconAlignValue() => hasStatusBar() ? -0.94 : -1;
 
@@ -51,6 +52,8 @@ class _PostDetailPageState extends State<PostDetailPage>
   late final currentPostIndex =
       ValueNotifier(widget.posts.indexOf(widget.post));
   late final AnimationController hideFabAnimController;
+  late final _pageViewController =
+      PageController(initialPage: widget.intitialIndex);
 
   @override
   void initState() {
@@ -101,6 +104,7 @@ class _PostDetailPageState extends State<PostDetailPage>
   void dispose() {
     hideFabAnimController.dispose();
     spinningIconpanelAnimationController.dispose();
+    _pageViewController.dispose();
     super.dispose();
   }
 
@@ -118,58 +122,30 @@ class _PostDetailPageState extends State<PostDetailPage>
         child: Scaffold(
           body: Stack(
             children: [
-              ValueListenableBuilder<bool>(
-                valueListenable: autoPlay,
-                builder: (context, autoPlay, child) =>
-                    ValueListenableBuilder<SlideShowConfiguration>(
-                  valueListenable: slideShowConfig,
-                  builder: (context, config, child) {
-                    return CarouselSlider.builder(
-                      itemCount: widget.posts.length,
-                      itemBuilder: (context, index, realIndex) {
-                        WidgetsBinding.instance.addPostFrameCallback(
-                            (_) => currentPostIndex.value = index);
-                        return PostDetail(
-                          post: widget.posts[index],
-                          minimal: autoPlay,
-                          animController: hideFabAnimController,
-                        );
-                      },
-                      options: CarouselOptions(
-                        onPageChanged: (index, reason) {
-                          context
-                              .read<SliverPostGridBloc>()
-                              .add(SliverPostGridItemChanged(index: index));
+              PageView.builder(
+                controller: _pageViewController,
+                onPageChanged: (index) {
+                  context
+                      .read<SliverPostGridBloc>()
+                      .add(SliverPostGridItemChanged(index: index));
 
-                          context.read<RecommendedArtistPostCubit>().add(
-                              RecommendedPostRequested(
-                                  currentPostId: widget.posts[index].id,
-                                  tags: widget.posts[index].artistTags));
-                          context.read<RecommendedCharacterPostCubit>().add(
-                              RecommendedPostRequested(
-                                  currentPostId: widget.posts[index].id,
-                                  tags: widget.posts[index].characterTags));
-                          context.read<PoolFromPostIdBloc>().add(
-                              PoolFromPostIdRequested(
-                                  postId: widget.posts[index].id));
-                          context.read<IsPostFavoritedBloc>().add(
-                              IsPostFavoritedRequested(
-                                  postId: widget.posts[index].id));
-                        },
-                        height: MediaQuery.of(context).size.height,
-                        viewportFraction: 1,
-                        enableInfiniteScroll: false,
-                        initialPage: widget.intitialIndex,
-                        autoPlay: autoPlay,
-                        autoPlayAnimationDuration: config.skipAnimation
-                            ? const Duration(microseconds: 1)
-                            : const Duration(milliseconds: 600),
-                        autoPlayInterval:
-                            Duration(seconds: config.interval.toInt()),
-                      ),
-                    );
-                  },
-                ),
+                  context.read<RecommendedArtistPostCubit>().add(
+                      RecommendedPostRequested(
+                          currentPostId: widget.posts[index].id,
+                          tags: widget.posts[index].artistTags));
+                  context.read<RecommendedCharacterPostCubit>().add(
+                      RecommendedPostRequested(
+                          currentPostId: widget.posts[index].id,
+                          tags: widget.posts[index].characterTags));
+                  context.read<PoolFromPostIdBloc>().add(
+                      PoolFromPostIdRequested(postId: widget.posts[index].id));
+                  context.read<IsPostFavoritedBloc>().add(
+                      IsPostFavoritedRequested(postId: widget.posts[index].id));
+                },
+                itemCount: widget.posts.length,
+                itemBuilder: (context, index) {
+                  return PostVideo(post: widget.posts[index]);
+                },
               ),
               ShadowGradientOverlay(
                 alignment: Alignment.topCenter,
