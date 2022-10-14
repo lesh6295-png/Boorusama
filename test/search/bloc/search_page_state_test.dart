@@ -1,90 +1,410 @@
+// Dart imports:
+import 'dart:async';
+
 // Package imports:
-import 'package:bloc_test/bloc_test.dart';
+import 'package:rxdart/subjects.dart';
 import 'package:test/test.dart';
 
 // Project imports:
+import 'package:boorusama/boorus/danbooru/application/common.dart';
+import 'package:boorusama/boorus/danbooru/application/post/post_bloc.dart';
 import 'package:boorusama/boorus/danbooru/application/search/search.dart';
+import 'package:boorusama/boorus/danbooru/application/tag/tag.dart';
+import '../common.dart';
+
+SearchBloc optionsState(
+  Stream<TagSearchState> tagSearchStream,
+  Stream<PostState> postStream,
+  bool allowSearch,
+) =>
+    SearchBloc(
+      initial: SearchState(
+        displayState: DisplayState.options,
+        allowSearch: allowSearch,
+      ),
+      tagSearchStream: tagSearchStream,
+      postStream: postStream,
+    );
+
+SearchBloc suggestionsState(
+  Stream<TagSearchState> tagSearchStream,
+  Stream<PostState> postStream,
+  bool allowSearch,
+) =>
+    SearchBloc(
+      initial: SearchState(
+        displayState: DisplayState.suggestion,
+        allowSearch: allowSearch,
+      ),
+      tagSearchStream: tagSearchStream,
+      postStream: postStream,
+    );
+
+SearchBloc resultState(
+  Stream<TagSearchState> tagSearchStream,
+  Stream<PostState> postStream,
+  bool allowSearch,
+) =>
+    SearchBloc(
+      initial: SearchState(
+        displayState: DisplayState.result,
+        allowSearch: allowSearch,
+      ),
+      tagSearchStream: tagSearchStream,
+      postStream: postStream,
+    );
 
 void main() {
-  group('search page state', () {
-    SearchState searchStateEmpty() =>
-        const SearchState(displayState: DisplayState.suggestion);
+  group(
+    '[when in options state]',
+    () {
+      test(
+        'enter a tag will switch to suggestions state',
+        () {
+          final tagInitState = TagSearchState.initial();
+          final tagStream = BehaviorSubject.seeded(tagInitState);
+          final bloc = optionsState(tagStream, const Stream.empty(), false);
 
-    SearchBloc bloc([SearchState? initial]) => SearchBloc(
-          initial: initial ?? searchStateEmpty(),
-          tagSearchStream: const Stream.empty(),
-          postStream: const Stream.empty(),
+          tagStream.add(tagInitState.copyWith(
+            query: 'a',
+          ));
+
+          expect(
+              bloc.stream,
+              emitsInOrder(
+                [
+                  const SearchState(displayState: DisplayState.suggestion),
+                ],
+              ));
+
+          tagStream.close();
+        },
+      );
+
+      test(
+        'enable search when selected tags is not empty',
+        () {
+          final tagInitState = TagSearchState.initial().copyWith(
+            selectedTags: [],
+          );
+          final tagStream = BehaviorSubject.seeded(tagInitState);
+          final bloc = optionsState(tagStream, const Stream.empty(), false);
+
+          tagStream.add(tagInitState.copyWith(
+            selectedTags: [
+              tagSearchItemFromString('a'),
+            ],
+          ));
+
+          expect(
+              bloc.stream,
+              emitsInOrder(
+                [
+                  const SearchState(
+                    displayState: DisplayState.options,
+                    allowSearch: true,
+                  ),
+                ],
+              ));
+
+          tagStream.close();
+        },
+      );
+
+      test(
+        'disable search when selected tags is empty',
+        () {
+          final tagInitState = TagSearchState.initial().copyWith(
+            selectedTags: [
+              tagSearchItemFromString('a'),
+            ],
+          );
+          final tagStream = BehaviorSubject.seeded(tagInitState);
+          final bloc = optionsState(tagStream, const Stream.empty(), false);
+
+          tagStream.add(tagInitState.copyWith(
+            selectedTags: [],
+          ));
+
+          expect(
+              bloc.stream,
+              emitsInOrder(
+                [
+                  const SearchState(
+                    displayState: DisplayState.options,
+                    // ignore: avoid_redundant_argument_values
+                    allowSearch: false,
+                  ),
+                ],
+              ));
+
+          tagStream.close();
+        },
+      );
+
+      test(
+        'switch to result state when search requested and allow search is true',
+        () {
+          final tagInitState = TagSearchState.initial().copyWith(
+            selectedTags: [
+              tagSearchItemFromString('a'),
+            ],
+          );
+          final tagStream = BehaviorSubject.seeded(tagInitState);
+          final bloc = optionsState(tagStream, const Stream.empty(), true);
+
+          // ignore: cascade_invocations
+          bloc.add(const SearchRequested());
+
+          expect(
+              bloc.stream,
+              emitsInOrder(
+                [
+                  emitsAnyOf([
+                    const SearchState(
+                      displayState: DisplayState.result,
+                      allowSearch: true,
+                    ),
+                    const SearchState(
+                      displayState: DisplayState.result,
+                      // ignore: avoid_redundant_argument_values
+                      allowSearch: false,
+                    ),
+                  ]),
+                ],
+              ));
+
+          tagStream.close();
+        },
+      );
+
+      test(
+          'stay at options state when search requested but allow search is false',
+          () {
+        final tagInitState = TagSearchState.initial().copyWith(
+          selectedTags: [],
         );
+        final tagStream = BehaviorSubject.seeded(tagInitState);
+        final bloc = optionsState(tagStream, const Stream.empty(), false);
 
-    blocTest<SearchBloc, SearchState>(
-      'when suggestions are received, switch to suggestion state',
-      build: () => bloc(),
-      act: (bloc) => bloc.add(const SearchSuggestionReceived()),
-      expect: () => [
-        searchStateEmpty().copyWith(displayState: DisplayState.suggestion),
-      ],
-    );
+        // ignore: cascade_invocations
+        bloc.add(const SearchRequested());
 
-    blocTest<SearchBloc, SearchState>(
-      'when a search requested, switch to result state',
-      build: () => bloc(),
-      act: (bloc) => bloc.add(const SearchRequested()),
-      expect: () => [
-        searchStateEmpty().copyWith(displayState: DisplayState.result),
-      ],
-    );
+        expect(
+            bloc.stream,
+            emitsInOrder(
+              [],
+            ));
 
-    blocTest<SearchBloc, SearchState>(
-      'when search options is requested, switch to options state',
-      build: () => bloc(),
-      act: (bloc) => bloc.add(const SearchGoBackToSearchOptionsRequested()),
-      expect: () => [
-        searchStateEmpty().copyWith(displayState: DisplayState.options),
-      ],
-    );
+        tagStream.close();
+      });
+    },
+  );
 
-    blocTest<SearchBloc, SearchState>(
-      'when selected tag is cleared, switch to options state',
-      build: () => bloc(),
-      act: (bloc) => bloc.add(const SearchSelectedTagCleared()),
-      expect: () => [
-        searchStateEmpty().copyWith(displayState: DisplayState.options),
-      ],
-    );
+  group('[when in suggestions state]', () {
+    test('delete all text will switch to options state', () {
+      final tagInitState = TagSearchState.initial().copyWith(
+        query: 'a',
+      );
+      final tagStream = BehaviorSubject.seeded(tagInitState);
+      final bloc = suggestionsState(tagStream, const Stream.empty(), false);
 
-    blocTest<SearchBloc, SearchState>(
-      'when query is empty, switch to options state',
-      build: () => bloc(),
-      act: (bloc) => bloc.add(const SearchQueryEmpty()),
-      expect: () => [
-        searchStateEmpty().copyWith(displayState: DisplayState.options),
-      ],
-    );
+      tagStream.add(tagInitState.copyWith(
+        query: '',
+      ));
 
-    blocTest<SearchBloc, SearchState>(
-      'when query is empty but already in result state, no state changed',
-      build: () =>
-          bloc(searchStateEmpty().copyWith(displayState: DisplayState.result)),
-      act: (bloc) => bloc.add(const SearchQueryEmpty()),
-      expect: () => [],
-    );
+      expect(
+          bloc.stream,
+          emitsInOrder(
+            [
+              const SearchState(displayState: DisplayState.options),
+            ],
+          ));
 
-    blocTest<SearchBloc, SearchState>(
-      'when search has error, switch to error state',
-      build: () => bloc(),
-      act: (bloc) => bloc.add(const SearchError()),
-      expect: () => [
-        searchStateEmpty().copyWith(displayState: DisplayState.error),
-      ],
-    );
+      tagStream.close();
+    });
 
-    blocTest<SearchBloc, SearchState>(
-      'when search has no data, switch to no result state',
-      build: () => bloc(),
-      act: (bloc) => bloc.add(const SearchNoData()),
-      expect: () => [
-        searchStateEmpty().copyWith(displayState: DisplayState.noResult),
-      ],
+    test('select a tag will switch to options state', () {
+      final tagInitState = TagSearchState.initial().copyWith(
+        query: 'a',
+      );
+      final tagStream = BehaviorSubject.seeded(tagInitState);
+      final bloc = suggestionsState(tagStream, const Stream.empty(), false);
+
+      tagStream.add(tagInitState.copyWith(
+        query: 'a',
+        selectedTags: [
+          tagSearchItemFromString('a'),
+        ],
+      ));
+
+      expect(
+          bloc.stream,
+          emitsInOrder(
+            [
+              const SearchState(
+                displayState: DisplayState.options,
+                allowSearch: true,
+              ),
+            ],
+          ));
+
+      tagStream.close();
+    });
+
+    test('always disable search', () {
+      final bloc =
+          suggestionsState(const Stream.empty(), const Stream.empty(), true);
+
+      // ignore: cascade_invocations
+      bloc
+        ..add(const SearchRequested())
+        ..close();
+
+      expect(
+        bloc.stream,
+        emitsInOrder([
+          emitsDone,
+        ]),
+      );
+    });
+  });
+
+  group('[when in result state]', () {
+    test('remove all selected tags will switch to options state', () {
+      final tagInitState = TagSearchState.initial().copyWith(
+        selectedTags: [
+          tagSearchItemFromString('a'),
+        ],
+      );
+      final tagStream = BehaviorSubject.seeded(tagInitState);
+      final bloc = resultState(tagStream, const Stream.empty(), false);
+
+      tagStream.add(tagInitState.copyWith(
+        selectedTags: [],
+      ));
+
+      expect(
+          bloc.stream,
+          emitsInOrder(
+            [
+              const SearchState(displayState: DisplayState.options),
+            ],
+          ));
+
+      tagStream.close();
+    });
+
+    test("stay at current state if doesn't remove all tags", () {
+      final tagInitState = TagSearchState.initial().copyWith(
+        selectedTags: [
+          tagSearchItemFromString('a'),
+          tagSearchItemFromString('b'),
+        ],
+      );
+      final tagStream = BehaviorSubject.seeded(tagInitState);
+      final bloc = resultState(tagStream, const Stream.empty(), false);
+
+      tagStream.add(tagInitState.copyWith(
+        selectedTags: [
+          tagSearchItemFromString('b'),
+        ],
+      ));
+
+      bloc.close();
+
+      expect(
+          bloc.stream,
+          emitsInOrder(
+            [
+              emitsDone,
+            ],
+          ));
+
+      tagStream.close();
+    });
+
+    test('always disable search', () {
+      final bloc =
+          resultState(const Stream.empty(), const Stream.empty(), true);
+
+      // ignore: cascade_invocations
+      bloc
+        ..add(const SearchRequested())
+        ..close();
+
+      expect(
+        bloc.stream,
+        emitsInOrder([
+          emitsDone,
+        ]),
+      );
+    });
+
+    test('if error happen when loading posts, switch to error state', () {
+      final postInitState = PostState.initial();
+      final postStream = BehaviorSubject.seeded(postInitState);
+
+      final bloc = resultState(const Stream.empty(), postStream, false)
+        ..emit(const SearchState(
+          displayState: DisplayState.result,
+        ));
+
+      postStream.add(postInitState.copyWith(
+        status: LoadStatus.failure,
+      ));
+
+      expect(
+        bloc.stream,
+        emitsInOrder([const SearchState(displayState: DisplayState.error)]),
+      );
+
+      postStream.close();
+    });
+
+    test('if no posts returned, switch to no data state', () {
+      final postInitState = PostState.initial();
+      final postStream = BehaviorSubject.seeded(postInitState);
+
+      final bloc = resultState(const Stream.empty(), postStream, false)
+        ..emit(const SearchState(
+          displayState: DisplayState.result,
+        ));
+
+      postStream.add(postInitState.copyWith(
+        status: LoadStatus.success,
+        posts: [],
+      ));
+
+      expect(
+        bloc.stream,
+        emitsInOrder([const SearchState(displayState: DisplayState.noResult)]),
+      );
+
+      postStream.close();
+    });
+
+    test(
+      'enter a tag will switch to suggestions state',
+      () {
+        final tagInitState = TagSearchState.initial();
+        final tagStream = BehaviorSubject.seeded(tagInitState);
+        final bloc = resultState(tagStream, const Stream.empty(), false);
+
+        tagStream.add(tagInitState.copyWith(
+          query: 'a',
+        ));
+
+        expect(
+            bloc.stream,
+            emitsInOrder(
+              [
+                const SearchState(displayState: DisplayState.suggestion),
+              ],
+            ));
+
+        tagStream.close();
+      },
     );
   });
 }

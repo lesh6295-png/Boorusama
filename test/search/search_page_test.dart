@@ -161,25 +161,6 @@ void main() {
   });
 
   testWidgets(
-    'when entering text, suggestion should be shown',
-    (tester) async {
-      FlutterError.onError = ignoreOverflowErrors;
-      final searchBloc = createSearchBloc();
-      await tester.pumpWidget(_buildSearchPage(
-        searchBloc: searchBloc,
-        tagSearchBloc: createTagSearchBloc(),
-        postBloc: createPostBloc(),
-      ));
-      await tester.pumpAndSettle();
-
-      await tester.enterText(find.byType(TextFormField), 'a');
-      await tester.pumpAndSettle();
-
-      expect(searchBloc.state.displayState, DisplayState.suggestion);
-    },
-  );
-
-  testWidgets(
     'when deleting text and current text is empty, options should be shown',
     (tester) async {
       FlutterError.onError = ignoreOverflowErrors;

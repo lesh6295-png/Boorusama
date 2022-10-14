@@ -72,6 +72,13 @@ abstract class TagSearchEvent extends Equatable {
   const TagSearchEvent();
 }
 
+class TagSearchInit extends TagSearchEvent {
+  const TagSearchInit();
+
+  @override
+  List<Object?> get props => [];
+}
+
 class TagSearchChanged extends TagSearchEvent {
   const TagSearchChanged(this.query);
   final String query;
@@ -172,8 +179,6 @@ class TagSearchBloc extends Bloc<TagSearchEvent, TagSearchState> {
               autocompleteRepository.getAutocomplete(getQuery(query, operator)),
           onSuccess: (tags) async => emit(state.copyWith(
             suggestionTags: tags,
-            query: query,
-            operator: operator,
           )),
         );
       },
@@ -258,6 +263,12 @@ class TagSearchBloc extends Bloc<TagSearchEvent, TagSearchState> {
         suggestionTags: [],
       ));
     });
+
+    on<TagSearchInit>((event, emit) {
+      emit(TagSearchState.initial());
+    });
+
+    add(const TagSearchInit());
   }
 
   factory TagSearchBloc.of(BuildContext context) => TagSearchBloc(

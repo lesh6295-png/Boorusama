@@ -36,6 +36,24 @@ void main() {
         );
 
     blocTest<TagSearchBloc, TagSearchState>(
+      'when user start typing, show suggestions',
+      build: () => bloc(),
+      act: (bloc) => bloc.add(const TagSearchChanged('a')),
+      expect: () => [
+        TagSearchState.initial().copyWith(
+          query: 'a',
+          suggestionTags: [],
+        ),
+        TagSearchState.initial().copyWith(
+          query: 'a',
+          suggestionTags: [
+            autocompleteData('a'),
+          ],
+        ),
+      ],
+    );
+
+    blocTest<TagSearchBloc, TagSearchState>(
       'when new tag selected, add to selected tags',
       build: () => bloc(),
       act: (bloc) => bloc.add(TagSearchNewTagSelected(autocompleteData())),

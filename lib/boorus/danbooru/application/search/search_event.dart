@@ -5,28 +5,21 @@ abstract class SearchEvent extends Equatable {
   const SearchEvent();
 }
 
-class SearchSuggestionReceived extends SearchEvent {
-  const SearchSuggestionReceived();
-  @override
-  List<Object?> get props => [];
-}
-
-class SearchSelectedTagCleared extends SearchEvent {
-  const SearchSelectedTagCleared();
-  @override
-  List<Object?> get props => [];
-}
-
-class SearchQueryEmpty extends SearchEvent {
-  const SearchQueryEmpty();
-  @override
-  List<Object?> get props => [];
-}
-
 class SearchRequested extends SearchEvent {
   const SearchRequested();
   @override
   List<Object?> get props => [];
+}
+
+class SearchPermissionChanged extends SearchEvent {
+  const SearchPermissionChanged({
+    required this.allow,
+  });
+
+  final bool allow;
+
+  @override
+  List<Object?> get props => [allow];
 }
 
 class SearchNoData extends SearchEvent {
@@ -46,8 +39,20 @@ class SearchError extends SearchEvent {
   List<Object?> get props => [message];
 }
 
-class SearchGoBackToSearchOptionsRequested extends SearchEvent {
-  const SearchGoBackToSearchOptionsRequested();
+class SearchSuggestions extends SearchEvent {
+  const SearchSuggestions();
+
   @override
   List<Object?> get props => [];
+}
+
+class SearchOptionsRequested extends SearchEvent {
+  const SearchOptionsRequested({
+    this.allowSearch = false,
+  });
+
+  final bool allowSearch;
+
+  @override
+  List<Object?> get props => [allowSearch];
 }

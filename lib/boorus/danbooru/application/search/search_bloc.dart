@@ -24,48 +24,89 @@ class SearchBloc extends Bloc<SearchEvent, SearchState> {
     required Stream<TagSearchState> tagSearchStream,
     required Stream<PostState> postStream,
   }) : super(initial) {
-    on<SearchSuggestionReceived>((event, emit) =>
-        emit(state.copyWith(displayState: DisplayState.suggestion)));
-
-    on<SearchRequested>((event, emit) =>
-        emit(state.copyWith(displayState: DisplayState.result)));
-
-    on<SearchGoBackToSearchOptionsRequested>((event, emit) {
-      emit(state.copyWith(displayState: DisplayState.options));
+    on<SearchRequested>((event, emit) {
+      if (state.displayState != DisplayState.options) return;
+      if (state.allowSearch) {
+        emit(state.copyWith(
+          displayState: DisplayState.result,
+          allowSearch: false,
+        ));
+      }
     });
 
-    on<SearchSelectedTagCleared>((event, emit) {
-      emit(state.copyWith(displayState: DisplayState.options));
-    });
-
-    on<SearchQueryEmpty>((event, emit) {
-      if (state.displayState == DisplayState.result) return;
-      emit(state.copyWith(displayState: DisplayState.options));
+    on<SearchOptionsRequested>((event, emit) {
+      emit(state.copyWith(
+        displayState: DisplayState.options,
+        allowSearch: event.allowSearch,
+      ));
     });
 
     on<SearchNoData>((event, emit) {
-      emit(state.copyWith(displayState: DisplayState.noResult));
+      emit(state.copyWith(
+        displayState: DisplayState.noResult,
+        allowSearch: false,
+      ));
     });
 
     on<SearchError>((event, emit) {
-      emit(state.copyWith(displayState: DisplayState.error));
+      emit(state.copyWith(
+        displayState: DisplayState.error,
+        allowSearch: false,
+      ));
+    });
+
+    on<SearchSuggestions>((event, emit) {
+      emit(state.copyWith(
+        displayState: DisplayState.suggestion,
+        allowSearch: false,
+      ));
+    });
+
+    on<SearchPermissionChanged>((event, emit) {
+      emit(state.copyWith(allowSearch: event.allow));
     });
 
     tagSearchStream
-        .where((event) => event.suggestionTags.isNotEmpty)
-        .listen((event) => add(const SearchSuggestionReceived()))
+        .pairwise()
+        .where((event) => event[0].query.isEmpty && event[1].query.isNotEmpty)
+        .listen((event) => add(const SearchSuggestions()))
         .addTo(compositeSubscription);
 
+    // In Options state
     tagSearchStream
-        .where((event) => event.query.isEmpty)
-        .listen((event) => add(const SearchQueryEmpty()))
+        .pairwise()
+        .where((event) => state.displayState == DisplayState.options)
+        .where((event) =>
+            event[0].selectedTags.isEmpty && event[1].selectedTags.isNotEmpty)
+        .listen((event) => add(const SearchPermissionChanged(allow: true)))
         .addTo(compositeSubscription);
 
     tagSearchStream
         .pairwise()
+        .where((event) => state.displayState == DisplayState.options)
         .where((event) =>
-            event[0].selectedTags.length == 1 && event[1].selectedTags.isEmpty)
-        .listen((event) => add(const SearchSelectedTagCleared()))
+            event[0].selectedTags.isNotEmpty && event[1].selectedTags.isEmpty)
+        .listen((event) => add(const SearchPermissionChanged(allow: false)))
+        .addTo(compositeSubscription);
+
+    // In Suggestion state
+    tagSearchStream
+        .pairwise()
+        .where((event) => state.displayState == DisplayState.suggestion)
+        .where((event) =>
+            event[0].query.isNotEmpty && event[1].query.isEmpty ||
+            event[0].selectedTags.isEmpty && event[1].selectedTags.isNotEmpty)
+        .listen((event) => add(SearchOptionsRequested(
+            allowSearch: event[1].selectedTags.isNotEmpty)))
+        .addTo(compositeSubscription);
+
+    // In Result state
+    tagSearchStream
+        .pairwise()
+        .where((event) => state.displayState == DisplayState.result)
+        .where((event) =>
+            event[0].selectedTags.isNotEmpty && event[1].selectedTags.isEmpty)
+        .listen((event) => add(const SearchOptionsRequested()))
         .addTo(compositeSubscription);
 
     Rx.combineLatest2<SearchState, PostState, Tuple2<SearchState, PostState>>(
@@ -85,11 +126,10 @@ class SearchBloc extends Bloc<SearchEvent, SearchState> {
       stream,
       postStream,
       (a, b) => Tuple2(a, b),
-    )
-        .where((event) =>
-            event.item2.status == LoadStatus.failure &&
-            event.item1.displayState == DisplayState.result)
-        .listen((state) {
+    ).where((event) {
+      return event.item2.status == LoadStatus.failure &&
+          event.item1.displayState == DisplayState.result;
+    }).listen((state) {
       add(SearchError(message: state.item2.exceptionMessage));
     }).addTo(compositeSubscription);
   }

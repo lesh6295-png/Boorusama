@@ -419,9 +419,7 @@ class _SearchBar extends StatelessWidget {
           return IconButton(
             icon: const Icon(Icons.arrow_back),
             onPressed: () => state.displayState != DisplayState.options
-                ? context
-                    .read<SearchBloc>()
-                    .add(const SearchGoBackToSearchOptionsRequested())
+                ? context.read<SearchBloc>().add(const SearchOptionsRequested())
                 : AppRouter.router.pop(context),
           );
         },

@@ -18,14 +18,12 @@ class SearchButton extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return BlocSelector<TagSearchBloc, TagSearchState, List<TagSearchItem>>(
-      selector: (state) => state.selectedTags,
-      builder: (context, tags) => BlocBuilder<SearchBloc, SearchState>(
-        builder: (context, state) => ConditionalRenderWidget(
-          condition: _shouldShowSearchButton(
-            state.displayState,
-            tags,
-          ),
+    return BlocBuilder<SearchBloc, SearchState>(
+      buildWhen: (previous, current) =>
+          previous.allowSearch != current.allowSearch,
+      builder: (context, state) {
+        return ConditionalRenderWidget(
+          condition: state.allowSearch,
           childBuilder: (context) => BlocBuilder<TagSearchBloc, TagSearchState>(
             builder: (context, state) => FloatingActionButton(
               onPressed: () => _onPress(context, state.selectedTags),
@@ -33,8 +31,8 @@ class SearchButton extends StatelessWidget {
               child: const Icon(Icons.search),
             ),
           ),
-        ),
-      ),
+        );
+      },
     );
   }
 
@@ -49,17 +47,17 @@ class SearchButton extends StatelessWidget {
   }
 }
 
-bool _shouldShowSearchButton(
-  DisplayState displayState,
-  List<TagSearchItem> selectedTags,
-) {
-  if (displayState == DisplayState.options) {
-    if (selectedTags.isEmpty) {
-      return false;
-    } else {
-      return true;
-    }
-  }
-  if (displayState == DisplayState.suggestion) return false;
-  return false;
-}
+// bool _shouldShowSearchButton(
+//   DisplayState displayState,
+//   List<TagSearchItem> selectedTags,
+// ) {
+//   if (displayState == DisplayState.options) {
+//     if (selectedTags.isEmpty) {
+//       return false;
+//     } else {
+//       return true;
+//     }
+//   }
+//   if (displayState == DisplayState.suggestion) return false;
+//   return false;
+// }
