@@ -27,7 +27,6 @@ import 'package:boorusama/boorus/danbooru/domain/pools/pool.dart';
 import 'package:boorusama/boorus/danbooru/domain/posts/posts.dart';
 import 'package:boorusama/boorus/danbooru/domain/searches/i_search_history_repository.dart';
 import 'package:boorusama/boorus/danbooru/domain/tags/tags.dart';
-import 'package:boorusama/boorus/danbooru/infra/repositories/autocomplete/autocomplete_repository.dart';
 import 'package:boorusama/boorus/danbooru/infra/services/tag_info_service.dart';
 import 'package:boorusama/boorus/danbooru/ui/features/accounts/login/login_page.dart';
 import 'package:boorusama/boorus/danbooru/ui/features/artists/artist_page.dart';
@@ -204,27 +203,28 @@ final postSearchHandler = Handler(handlerFunc: (
   Map<String, List<String>> params,
 ) {
   final args = context!.settings!.arguments as List;
+  final tagSeachBloc = TagSearchBloc.of(context);
+  final postBloc = PostBloc.of(context);
 
   return MultiBlocProvider(
     providers: [
       BlocProvider(
           create: (context) => SearchHistoryCubit(
-              searchHistoryRepository:
-                  context.read<ISearchHistoryRepository>())),
-      BlocProvider(create: (context) => PostBloc.of(context)),
+              searchHistoryRepository: context.read<ISearchHistoryRepository>())
+            ..getSearchHistory()),
+      BlocProvider(create: (context) => postBloc),
       BlocProvider.value(value: BlocProvider.of<ThemeBloc>(context)),
-      BlocProvider(
-          create: (context) => TagSearchBloc(
-                tagInfo: context.read<TagInfo>(),
-                autocompleteRepository: context.read<AutocompleteRepository>(),
-              )),
+      BlocProvider(create: (context) => tagSeachBloc),
       BlocProvider(
           create: (context) => SearchHistorySuggestionsBloc(
               searchHistoryRepository:
                   context.read<ISearchHistoryRepository>())),
       BlocProvider(
           create: (context) => SearchBloc(
-              initial: const SearchState(displayState: DisplayState.options))),
+                postStream: postBloc.stream,
+                tagSearchStream: tagSeachBloc.stream,
+                initial: const SearchState(displayState: DisplayState.options),
+              )),
       BlocProvider(
           create: (context) => RelatedTagBloc(
               relatedTagRepository: context.read<RelatedTagRepository>())),

@@ -5,11 +5,8 @@ import 'package:flutter/material.dart' hide ThemeMode;
 import 'package:easy_localization/easy_localization.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:rich_text_controller/rich_text_controller.dart';
-import 'package:rxdart/rxdart.dart';
-import 'package:tuple/tuple.dart';
 
 // Project imports:
-import 'package:boorusama/boorus/danbooru/application/common.dart';
 import 'package:boorusama/boorus/danbooru/application/post/post.dart';
 import 'package:boorusama/boorus/danbooru/application/search/search.dart';
 import 'package:boorusama/boorus/danbooru/application/search_history/search_history.dart';
@@ -53,7 +50,6 @@ class _SearchPageState extends State<SearchPage> {
     },
     onMatch: (List<String> match) {},
   );
-  final compositeSubscription = CompositeSubscription();
   final FocusNode focus = FocusNode();
 
   @override
@@ -76,47 +72,14 @@ class _SearchPageState extends State<SearchPage> {
       });
     }
 
-    context.read<SearchHistoryCubit>().getSearchHistory();
-
     queryEditingController.addListener(() {
       queryEditingController.selection = TextSelection.fromPosition(
           TextPosition(offset: queryEditingController.text.length));
     });
-
-    Rx.combineLatest2<SearchState, PostState, Tuple2<SearchState, PostState>>(
-            context.read<SearchBloc>().stream,
-            context.read<PostBloc>().stream,
-            (a, b) => Tuple2(a, b))
-        .where((event) =>
-            event.item2.status == LoadStatus.failure &&
-            event.item1.displayState == DisplayState.result)
-        .listen((state) {
-      context.read<SearchBloc>().add(const SearchError());
-      showSimpleSnackBar(
-        context: context,
-        duration: const Duration(seconds: 6),
-        content: Text(
-          state.item2.exceptionMessage!,
-        ).tr(),
-      );
-    }).addTo(compositeSubscription);
-
-    Rx.combineLatest2<SearchState, PostState, Tuple2<SearchState, PostState>>(
-            context.read<SearchBloc>().stream,
-            context.read<PostBloc>().stream,
-            (a, b) => Tuple2(a, b))
-        .where((event) =>
-            event.item2.status == LoadStatus.success &&
-            event.item2.posts.isEmpty &&
-            event.item1.displayState == DisplayState.result)
-        .listen((state) {
-      context.read<SearchBloc>().add(const SearchNoData());
-    }).addTo(compositeSubscription);
   }
 
   @override
   void dispose() {
-    compositeSubscription.dispose();
     queryEditingController.dispose();
     focus.dispose();
     super.dispose();
@@ -126,25 +89,27 @@ class _SearchPageState extends State<SearchPage> {
   Widget build(BuildContext context) {
     return MultiBlocListener(
       listeners: [
+        BlocListener<SearchBloc, SearchState>(
+          listenWhen: (previous, current) =>
+              current.displayState == DisplayState.error,
+          listener: (context, state) {
+            if (state.errorMessage != null) {
+              showSimpleSnackBar(
+                context: context,
+                duration: const Duration(seconds: 6),
+                content: Text(
+                  state.errorMessage!,
+                ).tr(),
+              );
+            }
+          },
+        ),
         BlocListener<TagSearchBloc, TagSearchState>(
           listenWhen: (previous, current) => current.query.isEmpty,
           listener: (context, state) {
-            context.read<SearchBloc>().add(const SearchQueryEmpty());
             context.read<TagSearchBloc>().add(const TagSearchCleared());
             queryEditingController.clear();
           },
-        ),
-        BlocListener<TagSearchBloc, TagSearchState>(
-          listenWhen: (previous, current) => current.suggestionTags.isNotEmpty,
-          listener: (context, state) {
-            context.read<SearchBloc>().add(const SearchSuggestionReceived());
-          },
-        ),
-        BlocListener<TagSearchBloc, TagSearchState>(
-          listenWhen: (previous, current) =>
-              current.selectedTags.isEmpty && previous.selectedTags.length == 1,
-          listener: (context, state) =>
-              context.read<SearchBloc>().add(const SearchSelectedTagCleared()),
         ),
         BlocListener<TagSearchBloc, TagSearchState>(
             listenWhen: (previous, current) =>

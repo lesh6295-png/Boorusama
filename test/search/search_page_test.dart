@@ -122,7 +122,10 @@ void main() {
   final mockFavoriteReposiory = MockFavoriteReposiory();
 
   SearchBloc createSearchBloc() => SearchBloc(
-      initial: const SearchState(displayState: DisplayState.options));
+        initial: const SearchState(displayState: DisplayState.options),
+        tagSearchStream: const Stream.empty(),
+        postStream: const Stream.empty(),
+      );
   TagSearchBloc createTagSearchBloc() => TagSearchBloc(
       autocompleteRepository: mockAutocompleteRepository,
       tagInfo: const TagInfo(

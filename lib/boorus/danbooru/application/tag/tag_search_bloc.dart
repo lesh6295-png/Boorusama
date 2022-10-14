@@ -1,5 +1,5 @@
 // Flutter imports:
-import 'package:flutter/foundation.dart';
+import 'package:flutter/material.dart';
 
 // Package imports:
 import 'package:equatable/equatable.dart';
@@ -259,6 +259,11 @@ class TagSearchBloc extends Bloc<TagSearchEvent, TagSearchState> {
       ));
     });
   }
+
+  factory TagSearchBloc.of(BuildContext context) => TagSearchBloc(
+        autocompleteRepository: context.read<AutocompleteRepository>(),
+        tagInfo: context.read<TagInfo>(),
+      );
 }
 
 String getQuery(String query, FilterOperator operator) {

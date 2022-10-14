@@ -36,9 +36,14 @@ class SearchNoData extends SearchEvent {
 }
 
 class SearchError extends SearchEvent {
-  const SearchError();
+  const SearchError({
+    this.message,
+  });
+
+  final String? message;
+
   @override
-  List<Object?> get props => [];
+  List<Object?> get props => [message];
 }
 
 class SearchGoBackToSearchOptionsRequested extends SearchEvent {

@@ -10,8 +10,11 @@ void main() {
     SearchState searchStateEmpty() =>
         const SearchState(displayState: DisplayState.suggestion);
 
-    SearchBloc bloc([SearchState? initial]) =>
-        SearchBloc(initial: initial ?? searchStateEmpty());
+    SearchBloc bloc([SearchState? initial]) => SearchBloc(
+          initial: initial ?? searchStateEmpty(),
+          tagSearchStream: const Stream.empty(),
+          postStream: const Stream.empty(),
+        );
 
     blocTest<SearchBloc, SearchState>(
       'when suggestions are received, switch to suggestion state',
