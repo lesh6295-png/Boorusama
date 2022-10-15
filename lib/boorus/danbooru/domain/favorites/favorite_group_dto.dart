@@ -1,4 +1,5 @@
 import 'package:boorusama/boorus/danbooru/domain/favorites/creator_dto.dart';
+import 'package:boorusama/boorus/danbooru/domain/favorites/favorites.dart';
 
 class FavoriteGroupDto {
   FavoriteGroupDto({
@@ -36,3 +37,15 @@ class FavoriteGroupDto {
   final DateTime? updatedAt;
   final bool? isPublic;
 }
+
+FavoriteGroup favoriteGroupDtoToFavoriteGroup(FavoriteGroupDto d) =>
+    FavoriteGroup(
+      id: d.id!,
+      name: d.name ?? '',
+      creator:
+          d.creator == null ? Creator.empty() : creatorDtoToCreator(d.creator!),
+      createdAt: d.createdAt!,
+      updatedAt: d.updatedAt!,
+      isPublic: d.isPublic ?? false,
+      postIds: d.postIds ?? [],
+    );

@@ -1,3 +1,6 @@
+import 'package:boorusama/boorus/danbooru/domain/favorites/favorites.dart';
+import 'package:boorusama/boorus/danbooru/domain/users/user_level.dart';
+
 class CreatorDto {
   CreatorDto({
     required this.id,
@@ -43,4 +46,12 @@ class CreatorDto {
   final bool? canApprovePosts;
   final bool? canUploadFree;
   final String? levelString;
+}
+
+Creator creatorDtoToCreator(CreatorDto d) {
+  return Creator(
+    id: d.id!,
+    name: d.name ?? '',
+    level: d.level == null ? UserLevel.member : intToUserLevel(d.level!),
+  );
 }

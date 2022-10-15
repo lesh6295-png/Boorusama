@@ -8,6 +8,12 @@ class Creator extends Equatable {
     required this.level,
   });
 
+  factory Creator.empty() => const Creator(
+        id: -1,
+        name: 'Creator',
+        level: UserLevel.member,
+      );
+
   final CreatorId id;
   final CreatorName name;
   final UserLevel level;

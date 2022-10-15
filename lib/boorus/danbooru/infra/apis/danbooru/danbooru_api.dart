@@ -304,4 +304,14 @@ abstract class Api {
     @Path() int postId,
     @Body() Map<String, dynamic> map,
   );
+
+  @GET('/favorite_groups.json')
+  Future<HttpResponse> getFavoriteGroups(
+    @Query('login') String login,
+    @Query('api_key') String apiKey,
+    @Query('page') int page,
+    @Query('search[name]') String namePattern,
+    @Query('only') String only,
+    @Query('limit') int limit,
+  );
 }
