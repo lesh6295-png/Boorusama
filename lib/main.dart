@@ -62,14 +62,12 @@ import 'boorus/danbooru/domain/settings/settings.dart';
 import 'boorus/danbooru/infra/local/repositories/search_history/search_history.dart';
 import 'boorus/danbooru/infra/repositories/repositories.dart';
 
-import 'package:boorusama/boorus/danbooru/domain/autocomplete/autocomplete.dart'
-    hide PoolCategory;
-
 //TODO: should parse from translation files instead of hardcoding
 const supportedLocales = [
   Locale('en', ''),
   Locale('vi', ''),
   Locale('ru', ''),
+  Locale('be', ''),
 ];
 
 void main() async {
@@ -132,9 +130,6 @@ void main() async {
     db: searchHistoryBox,
   );
 
-  final autocompleteBox = await Hive.openBox<String>('autocomplete');
-  final autocompleteHttpCacher = AutocompleteHttpCacher(box: autocompleteBox);
-
   final config = DanbooruConfig();
   final booruFactory = BooruFactory.from(await loadBooruList());
   final packageInfo = PackageInfoProvider(await getPackageInfo());
@@ -145,6 +140,8 @@ void main() async {
       await DeviceInfoService(plugin: DeviceInfoPlugin()).getDeviceInfo();
 
   final defaultBooru = booruFactory.create(isSafeMode: settings.safeMode);
+
+  final tempPath = await getTemporaryDirectory();
 
   //TODO: this notification is only used for download feature
   final flutterLocalNotificationsPlugin = FlutterLocalNotificationsPlugin();
@@ -167,6 +164,7 @@ void main() async {
   //TODO: shouldn't hardcode language.
   setLocaleMessages('vi', ViMessages());
   setLocaleMessages('ru', RuMessages());
+  setLocaleMessages('be', RuMessages());
 
   void run() {
     runApp(
@@ -194,6 +192,7 @@ void main() async {
               BlocProvider(
                 create: (_) => ApiCubit(
                   defaultUrl: defaultBooru.url,
+                  onDioRequest: (baseUrl) => dio(tempPath, baseUrl),
                 ),
               ),
               BlocProvider(
@@ -255,20 +254,17 @@ void main() async {
                     repo: ArtistCommentaryRepository(api, accountRepo),
                   );
 
-                  final poolRepo = PoolRepository(api, accountRepo);
+                  final poolRepo = PoolRepositoryCacher(
+                    cache: LruCacher(capacity: 15),
+                    repo: PoolRepository(api, accountRepo),
+                  );
 
                   final blacklistedTagRepo =
                       BlacklistedTagsRepository(userRepo, accountRepo);
 
-                  final autocompleteRepo = AutocompleteCacheRepository(
-                    cacher: LruCacher<String, List<AutocompleteData>>(
-                      capacity: 10,
-                    ),
-                    repo: AutocompleteRepository(
-                      api: api,
-                      accountRepository: accountRepo,
-                      cache: autocompleteHttpCacher,
-                    ),
+                  final autocompleteRepo = AutocompleteRepository(
+                    api: api,
+                    accountRepository: accountRepo,
                   );
 
                   final relatedTagRepo = RelatedTagApiRepository(api);
@@ -342,14 +338,6 @@ void main() async {
                     repo: noteRepo,
                   ));
 
-                  final poolDescriptionBloc = PoolDescriptionBloc(
-                    endpoint: state.dio.options.baseUrl,
-                    poolDescriptionRepository: PoolDescriptionCacher(
-                      cache: LruCacher(capacity: 100),
-                      repo: poolDescriptionRepo,
-                    ),
-                  );
-
                   return MultiRepositoryProvider(
                     providers: [
                       RepositoryProvider<ITagRepository>.value(value: tagRepo),
@@ -384,6 +372,8 @@ void main() async {
                           value: artistCommentaryRepo),
                       RepositoryProvider<PostVoteRepository>.value(
                           value: postVoteRepo),
+                      RepositoryProvider<PoolDescriptionRepository>.value(
+                          value: poolDescriptionRepo),
                     ],
                     child: MultiBlocProvider(
                       providers: [
@@ -403,7 +393,6 @@ void main() async {
                         BlocProvider.value(value: artistBloc),
                         BlocProvider.value(value: wikiBloc),
                         BlocProvider.value(value: noteBloc),
-                        BlocProvider.value(value: poolDescriptionBloc),
                       ],
                       child: MultiBlocListener(
                         listeners: [
