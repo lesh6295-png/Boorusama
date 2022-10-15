@@ -39,6 +39,9 @@ class AppRouter {
           handler: favoritesHandler, transitionType: TransitionType.material)
       ..define('/users/blacklisted_tags',
           handler: blacklistedTagsHandler,
+          transitionType: TransitionType.material)
+      ..define('/favorite_groups',
+          handler: favoriteGroupsHandler,
           transitionType: TransitionType.material);
   }
 }

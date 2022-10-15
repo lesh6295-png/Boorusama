@@ -1,4 +1,3 @@
-import 'package:boorusama/boorus/danbooru/domain/favorites/creator_dto.dart';
 import 'package:boorusama/boorus/danbooru/domain/favorites/favorites.dart';
 
 class FavoriteGroupDto {

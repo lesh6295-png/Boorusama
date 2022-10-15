@@ -1,4 +1,5 @@
 // Flutter imports:
+import 'package:boorusama/boorus/danbooru/ui/features/favorites/favorite_groups_page.dart';
 import 'package:flutter/material.dart';
 
 // Package imports:
@@ -354,6 +355,18 @@ final blacklistedTagsHandler =
             ..add(const BlacklistedTagRequested())),
     ],
     child: const BlacklistedTagsPage(),
+  );
+});
+
+final favoriteGroupsHandler =
+    Handler(handlerFunc: (context, Map<String, List<String>> params) {
+  return MultiBlocProvider(
+    providers: [
+      BlocProvider(
+          create: (context) => FavoriteGroupsBloc.of(context)
+            ..add(const FavoriteGroupsAllFetched())),
+    ],
+    child: const FavoriteGroupsPage(),
   );
 });
 
